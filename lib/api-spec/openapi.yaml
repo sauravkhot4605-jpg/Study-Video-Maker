@@ -198,6 +198,12 @@ components:
     StudySceneAnimation:
       type: object
       properties:
+        illustration:
+          type: string
+          enum: [general, water-cycle, plant-growth, fraction, reaction-water]
+          description: Optional specialized educational illustration; general uses the diagram layout.
+        fraction:
+          $ref: "#/components/schemas/StudyFractionVisual"
         layout:
           type: string
           enum: [flow, cycle, orbit, comparison]
@@ -219,6 +225,18 @@ components:
           type: string
           maxLength: 160
       required: [layout, nodes, caption]
+    StudyFractionVisual:
+      type: object
+      properties:
+        numerator:
+          type: integer
+          minimum: 0
+          maximum: 12
+        denominator:
+          type: integer
+          minimum: 1
+          maximum: 12
+      required: [numerator, denominator]
     StudyLesson:
       type: object
       properties:

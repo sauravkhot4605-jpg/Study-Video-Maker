@@ -8,6 +8,7 @@
 
 export * from './errorResponse';
 export * from './healthStatus';
+export * from './studyFractionVisual';
 export * from './studyLesson';
 export * from './studyLessonInput';
 export * from './studyLessonInputDuration';
@@ -17,6 +18,7 @@ export * from './studyLessonNarration';
 export * from './studyLessonNarrationInput';
 export * from './studyLessonScene';
 export * from './studySceneAnimation';
+export * from './studySceneAnimationIllustration';
 export * from './studySceneAnimationLayout';
 export * from './studySceneAnimationNodesItem';
 export * from './studySceneAnimationNodesItemIcon';

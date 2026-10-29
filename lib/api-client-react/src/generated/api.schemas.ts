@@ -76,6 +76,33 @@ export interface StudyTextScanResult {
   text: string;
 }
 
+/**
+ * Optional specialized educational illustration; general uses the diagram layout.
+ */
+export type StudySceneAnimationIllustration = typeof StudySceneAnimationIllustration[keyof typeof StudySceneAnimationIllustration];
+
+
+export const StudySceneAnimationIllustration = {
+  general: 'general',
+  'water-cycle': 'water-cycle',
+  'plant-growth': 'plant-growth',
+  fraction: 'fraction',
+  'reaction-water': 'reaction-water',
+} as const;
+
+export interface StudyFractionVisual {
+  /**
+     * @minimum 0
+     * @maximum 12
+     */
+  numerator: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  denominator: number;
+}
+
 export type StudySceneAnimationLayout = typeof StudySceneAnimationLayout[keyof typeof StudySceneAnimationLayout];
 
 
@@ -114,6 +141,9 @@ export type StudySceneAnimationNodesItem = {
 };
 
 export interface StudySceneAnimation {
+  /** Optional specialized educational illustration; general uses the diagram layout. */
+  illustration?: StudySceneAnimationIllustration;
+  fraction?: StudyFractionVisual;
   layout: StudySceneAnimationLayout;
   /**
      * @minItems 2

@@ -32,6 +32,11 @@ export const GenerateStudyLessonBody = zod.object({
   "duration": zod.enum(['short', 'standard', 'detailed'])
 })
 
+export const generateStudyLessonResponseScenesItemAnimationFractionNumeratorMin = 0;
+export const generateStudyLessonResponseScenesItemAnimationFractionNumeratorMax = 12;
+
+export const generateStudyLessonResponseScenesItemAnimationFractionDenominatorMax = 12;
+
 export const generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax = 48;
 
 export const generateStudyLessonResponseScenesItemAnimationNodesMin = 2;
@@ -54,6 +59,11 @@ export const GenerateStudyLessonResponse = zod.object({
   "narration": zod.string(),
   "visualCue": zod.string(),
   "animation": zod.object({
+  "illustration": zod.enum(['general', 'water-cycle', 'plant-growth', 'fraction', 'reaction-water']).optional().describe('Optional specialized educational illustration; general uses the diagram layout.'),
+  "fraction": zod.object({
+  "numerator": zod.int().min(generateStudyLessonResponseScenesItemAnimationFractionNumeratorMin).max(generateStudyLessonResponseScenesItemAnimationFractionNumeratorMax),
+  "denominator": zod.int().min(1).max(generateStudyLessonResponseScenesItemAnimationFractionDenominatorMax)
+}).optional(),
   "layout": zod.enum(['flow', 'cycle', 'orbit', 'comparison']),
   "nodes": zod.array(zod.object({
   "label": zod.string().max(generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax),

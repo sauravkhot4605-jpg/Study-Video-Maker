@@ -5,10 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudyFractionVisual } from './studyFractionVisual';
+import type { StudySceneAnimationIllustration } from './studySceneAnimationIllustration';
 import type { StudySceneAnimationLayout } from './studySceneAnimationLayout';
 import type { StudySceneAnimationNodesItem } from './studySceneAnimationNodesItem';
 
 export interface StudySceneAnimation {
+  /** Optional specialized educational illustration; general uses the diagram layout. */
+  illustration?: StudySceneAnimationIllustration;
+  fraction?: StudyFractionVisual;
   layout: StudySceneAnimationLayout;
   /**
      * @minItems 2

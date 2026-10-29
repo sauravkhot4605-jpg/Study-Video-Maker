@@ -27,6 +27,7 @@ Return only valid JSON matching this shape:
       "narration": "spoken explanation for this scene",
       "visualCue": "a concise visual direction suitable for a simple animated illustration",
       "animation": {
+        "illustration": "general",
         "layout": "flow",
         "nodes": [
           {"label": "First topic-specific concept", "icon": "lightbulb"},
@@ -40,6 +41,12 @@ Return only valid JSON matching this shape:
   ]
 }
 For EVERY scene include an animation plan. Select layout from flow (ordered steps or cause/effect), cycle (repeating process), orbit (central concept with related parts), comparison (contrasting concepts). Use 2–5 nodes with concise topic-specific labels (max 48 characters each), never generic labels like "Step 1". Each icon must be one of sun, water, plant, molecule, planet, person, book, energy, number, cloud, cell, gear, lightbulb, atom, heart. Choose icons that best represent the concepts. Caption must explain the actual relationship in at most 160 characters. Vary layouts only when semantically appropriate; never imply a scientific cycle or causal connection that is not supported. The nodes and caption should teach the same concept as that scene's narration.
+Choose illustration per scene, from general, water-cycle, plant-growth, fraction, reaction-water:
+- water-cycle: a landscape with sea, sun, clouds, vapour rising, rain falling, and water collecting. Use only when the scene teaches the water cycle or one of its stages, not merely any mention of water.
+- plant-growth: a seed develops roots, a stem, and leaves under sunlight and rain. Use for germination or plant growth, NOT as a substitute for an explanation of photosynthesis or cell biology.
+- fraction: a circle divided into equal parts with the requested number of parts highlighted. Include fraction: {"numerator": 3, "denominator": 4} using the ACTUAL fraction explained in that scene. Denominator is 1–12; numerator is 0–denominator. Introduce that specific fraction in the narration and caption. Use only for a single proper fraction or whole, not unrelated math, improper fractions, or multi-fraction comparisons; use general for those.
+- reaction-water: the EXACT balanced reaction 2 H2 + O2 -> 2 H2O, with six conserved atoms (four hydrogen and two oxygen). Use ONLY when the narration teaches hydrogen combining with oxygen to form water, NEVER for other reactions. Explain it as a schematic model, not a real laboratory procedure.
+- general: use the existing labeled diagram layout for ALL other topics and scenes. Do not force an unrelated illustration onto a topic. Keep nodes and caption meaningful even for specialized illustrations; they remain a text summary of the scene.
 Aim for 3–4 minutes for a short lesson, 6–8 minutes for a standard lesson, and 10–12 minutes for a detailed lesson. Use enough spoken explanation to fit that duration at a natural pace; do not compress a longer lesson into a few sentences. Use 3–4 scenes for a short lesson, 4–6 for a standard lesson, and 6–8 for a detailed lesson. Each narration should be understandable when heard without reading. Include a key term and definition only when one genuinely helps; otherwise use null.`;
 
 router.post("/study-lessons/generate", async (req, res): Promise<void> => {
@@ -84,6 +91,13 @@ router.post("/study-lessons/generate", async (req, res): Promise<void> => {
     const lesson = GenerateStudyLessonResponse.parse(JSON.parse(content));
     if (lesson.scenes.some((scene) => !scene.animation)) {
       throw new Error("The model returned a lesson without animation plans.");
+    }
+    for (const scene of lesson.scenes) {
+      const plan = scene.animation;
+      if (plan?.illustration === "fraction" &&
+          (!plan.fraction || plan.fraction.numerator > plan.fraction.denominator)) {
+        throw new Error("The model returned an invalid fraction illustration.");
+      }
     }
     res.json(lesson);
   } catch (error) {

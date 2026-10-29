@@ -1,5 +1,6 @@
 import type { StudyLesson, StudyLessonScene, StudySceneAnimation } from '@workspace/api-client-react';
 import { drawIcon } from './icons';
+import { drawVisual, resolveVisual } from './illustration';
 
 export const WIDTH = 1280;
 export const HEIGHT = 720;
@@ -178,7 +179,9 @@ export function drawFrame(c: CanvasRenderingContext2D, { lesson, sceneIndex, sce
   const capAlpha = ease((t - 1) / 0.8);
   c.globalAlpha = fade * capAlpha; capLines.forEach((line) => c.fillText(line, 70, 150)); c.globalAlpha = fade;
 
-  drawDiagram(c, plan, t, duration);
+  const visual = resolveVisual(scene);
+  if (visual.kind === 'general') drawDiagram(c, plan, t, duration);
+  else drawVisual(c, visual, t, duration);
   c.restore();
 
   // progressive captions

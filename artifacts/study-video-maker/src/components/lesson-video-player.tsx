@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { StudyLesson } from '@workspace/api-client-react';
 import { Download, LoaderCircle, Pause, Play, RotateCcw, Square, Video } from 'lucide-react';
 import { HEIGHT, WIDTH, drawFrame, sceneDuration, scenePlan } from '@/components/lesson-canvas/renderer';
+import { VISUAL_LABELS, resolveVisual } from '@/components/lesson-canvas/illustration';
 
 type Props = {
   lesson: StudyLesson;
@@ -193,6 +194,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
   const currentScene = lesson.scenes[sceneIndex];
   const recording = phase === 'preparing' || phase === 'recording';
   const legacy = currentScene ? scenePlan(currentScene).legacy : false;
+  const visual = resolveVisual(currentScene);
   const fileName = `${lesson.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'studyloom-lesson'}.webm`;
 
   return (
@@ -205,6 +207,13 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
           </button>
         )}
       </div>
+      <div className="flex items-center gap-2 border-t border-white/10 bg-[#1b4441] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#c3d9ca]" data-testid="status-visual-mode">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#e7c568]" />
+        Visual mode: {VISUAL_LABELS[visual.kind]}
+      </div>
+      {'notice' in visual && visual.notice && (
+        <p className="border-t border-white/10 bg-[#4a3a33] px-4 py-2 text-[11px] leading-4 text-[#ffd0bd]" role="alert" data-testid="status-visual-notice">{visual.notice}</p>
+      )}
       {legacy && (
         <p className="border-t border-white/10 bg-[#2a4a45] px-4 py-2 text-[11px] leading-4 text-[#f2d8a7]" data-testid="status-legacy-diagram">
           This lesson was saved before topic-specific animations. Showing generic steps from the scene title; create the lesson again for a tailored diagram.
