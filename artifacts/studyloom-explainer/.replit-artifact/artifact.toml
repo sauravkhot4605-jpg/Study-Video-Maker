@@ -1,0 +1,29 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/studyloom-explainer/"
+title = "Studyloom Explainer"
+description = "A short animated explainer introducing Studyloom, the learning app that turns study topics and pasted text into clear narrated lessons for students and teachers."
+version = "1.0.0"
+id = "artifacts/studyloom-explainer"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/studyloom-explainer/" ]
+localPort = 23278
+
+[services.development]
+run = "pnpm --filter @workspace/studyloom-explainer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/studyloom-explainer", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/studyloom-explainer/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23278"
+BASE_PATH = "/studyloom-explainer/"
