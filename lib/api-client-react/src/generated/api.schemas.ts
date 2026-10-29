@@ -76,10 +76,59 @@ export interface StudyTextScanResult {
   text: string;
 }
 
+export type StudySceneAnimationLayout = typeof StudySceneAnimationLayout[keyof typeof StudySceneAnimationLayout];
+
+
+export const StudySceneAnimationLayout = {
+  flow: 'flow',
+  cycle: 'cycle',
+  orbit: 'orbit',
+  comparison: 'comparison',
+} as const;
+
+export type StudySceneAnimationNodesItemIcon = typeof StudySceneAnimationNodesItemIcon[keyof typeof StudySceneAnimationNodesItemIcon];
+
+
+export const StudySceneAnimationNodesItemIcon = {
+  sun: 'sun',
+  water: 'water',
+  plant: 'plant',
+  molecule: 'molecule',
+  planet: 'planet',
+  person: 'person',
+  book: 'book',
+  energy: 'energy',
+  number: 'number',
+  cloud: 'cloud',
+  cell: 'cell',
+  gear: 'gear',
+  lightbulb: 'lightbulb',
+  atom: 'atom',
+  heart: 'heart',
+} as const;
+
+export type StudySceneAnimationNodesItem = {
+  /** @maxLength 48 */
+  label: string;
+  icon: StudySceneAnimationNodesItemIcon;
+};
+
+export interface StudySceneAnimation {
+  layout: StudySceneAnimationLayout;
+  /**
+     * @minItems 2
+     * @maxItems 5
+     */
+  nodes: StudySceneAnimationNodesItem[];
+  /** @maxLength 160 */
+  caption: string;
+}
+
 export interface StudyLessonScene {
   title: string;
   narration: string;
   visualCue: string;
+  animation?: StudySceneAnimation;
   /** @nullable */
   keyTerm: string | null;
   /** @nullable */

@@ -188,11 +188,37 @@ components:
           type: string
         visualCue:
           type: string
+        animation:
+          $ref: "#/components/schemas/StudySceneAnimation"
         keyTerm:
           type: ["string", "null"]
         keyTermDefinition:
           type: ["string", "null"]
       required: [title, narration, visualCue, keyTerm, keyTermDefinition]
+    StudySceneAnimation:
+      type: object
+      properties:
+        layout:
+          type: string
+          enum: [flow, cycle, orbit, comparison]
+        nodes:
+          type: array
+          minItems: 2
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+                maxLength: 48
+              icon:
+                type: string
+                enum: [sun, water, plant, molecule, planet, person, book, energy, number, cloud, cell, gear, lightbulb, atom, heart]
+            required: [label, icon]
+        caption:
+          type: string
+          maxLength: 160
+      required: [layout, nodes, caption]
     StudyLesson:
       type: object
       properties:

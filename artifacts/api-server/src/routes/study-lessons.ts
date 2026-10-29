@@ -26,11 +26,20 @@ Return only valid JSON matching this shape:
       "title": "short scene heading",
       "narration": "spoken explanation for this scene",
       "visualCue": "a concise visual direction suitable for a simple animated illustration",
+      "animation": {
+        "layout": "flow",
+        "nodes": [
+          {"label": "First topic-specific concept", "icon": "lightbulb"},
+          {"label": "Second topic-specific concept", "icon": "gear"}
+        ],
+        "caption": "A short explanation of the relationship being animated"
+      },
       "keyTerm": null,
       "keyTermDefinition": null
     }
   ]
 }
+For EVERY scene include an animation plan. Select layout from flow (ordered steps or cause/effect), cycle (repeating process), orbit (central concept with related parts), comparison (contrasting concepts). Use 2–5 nodes with concise topic-specific labels (max 48 characters each), never generic labels like "Step 1". Each icon must be one of sun, water, plant, molecule, planet, person, book, energy, number, cloud, cell, gear, lightbulb, atom, heart. Choose icons that best represent the concepts. Caption must explain the actual relationship in at most 160 characters. Vary layouts only when semantically appropriate; never imply a scientific cycle or causal connection that is not supported. The nodes and caption should teach the same concept as that scene's narration.
 Aim for 3–4 minutes for a short lesson, 6–8 minutes for a standard lesson, and 10–12 minutes for a detailed lesson. Use enough spoken explanation to fit that duration at a natural pace; do not compress a longer lesson into a few sentences. Use 3–4 scenes for a short lesson, 4–6 for a standard lesson, and 6–8 for a detailed lesson. Each narration should be understandable when heard without reading. Include a key term and definition only when one genuinely helps; otherwise use null.`;
 
 router.post("/study-lessons/generate", async (req, res): Promise<void> => {
@@ -73,6 +82,9 @@ router.post("/study-lessons/generate", async (req, res): Promise<void> => {
     }
 
     const lesson = GenerateStudyLessonResponse.parse(JSON.parse(content));
+    if (lesson.scenes.some((scene) => !scene.animation)) {
+      throw new Error("The model returned a lesson without animation plans.");
+    }
     res.json(lesson);
   } catch (error) {
     req.log.error(

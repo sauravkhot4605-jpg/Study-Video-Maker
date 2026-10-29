@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StudyLesson } from '@workspace/api-client-react';
-import { Download, LoaderCircle, Pause, Play, RotateCcw, Video } from 'lucide-react';
+import { Download, LoaderCircle, Pause, Play, RotateCcw, Square, Video } from 'lucide-react';
+import { HEIGHT, WIDTH, drawFrame, sceneDuration, scenePlan } from '@/components/lesson-canvas/renderer';
 
 type Props = {
   lesson: StudyLesson;
@@ -10,145 +11,114 @@ type Props = {
 
 type Phase = 'idle' | 'preparing' | 'recording' | 'ready' | 'error' | 'unsupported';
 
-const WIDTH = 1280;
-const HEIGHT = 720;
-
-function drawText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines: number) {
-  const words = text.split(/\s+/);
-  let line = '';
-  let lineNumber = 0;
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (context.measureText(candidate).width > maxWidth && line) {
-      context.fillText(line, x, y + lineNumber * lineHeight);
-      lineNumber += 1;
-      line = word;
-      if (lineNumber >= maxLines) break;
-    } else {
-      line = candidate;
-    }
-  }
-  if (line && lineNumber < maxLines) context.fillText(line, x, y + lineNumber * lineHeight);
-}
-
 export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playbackRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
-  const captureStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>(0);
-  const timelineTimerRef = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
+  const videoUrlRef = useRef('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState('');
   const [error, setError] = useState('');
   const [recordedPlaying, setRecordedPlaying] = useState(false);
-  const sceneIndexRef = useRef(sceneIndex);
-  sceneIndexRef.current = sceneIndex;
+  const [previewPlaying, setPreviewPlaying] = useState(true);
 
-  const sceneDurations = lesson.scenes.map((scene) => {
-    const wordCount = scene.narration.trim().split(/\s+/).filter(Boolean).length;
-    return Math.max(5, Math.min(45, wordCount / 2.5));
-  });
-  const totalDuration = sceneDurations.reduce((sum, duration) => sum + duration, 0);
+  // Internal timeline: the renderer reads these refs, never props directly.
+  const shownIndexRef = useRef(sceneIndex);
+  const sceneTimeRef = useRef(0);
+  const playingRef = useRef(true);
+  const recordingRef = useRef(false);
+  const onSceneChangeRef = useRef(onSceneChange);
+  onSceneChangeRef.current = onSceneChange;
+  playingRef.current = previewPlaying;
+
+  // Manual navigation: restart the scene animation. During export, snap the UI back to the recorded scene.
+  useEffect(() => {
+    if (recordingRef.current) {
+      if (sceneIndex !== shownIndexRef.current) onSceneChangeRef.current(shownIndexRef.current);
+      return;
+    }
+    if (sceneIndex !== shownIndexRef.current) {
+      shownIndexRef.current = sceneIndex;
+      sceneTimeRef.current = 0;
+    }
+  }, [sceneIndex]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) return;
-    let active = true;
-    const draw = (timestamp: number) => {
-      if (!active) return;
-      const scene = lesson.scenes[sceneIndexRef.current] || lesson.scenes[0];
-      const t = timestamp / 1000;
-      const gradient = context.createLinearGradient(0, 0, WIDTH, HEIGHT);
-      gradient.addColorStop(0, '#173c3a');
-      gradient.addColorStop(1, '#285956');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, WIDTH, HEIGHT);
-
-      context.save();
-      context.globalAlpha = 0.13;
-      context.strokeStyle = '#d9e7d7';
-      context.lineWidth = 2;
-      for (let ring = 0; ring < 4; ring += 1) {
-        context.beginPath();
-        context.arc(1070, 350, 90 + ring * 58 + Math.sin(t * 1.2 + ring) * 8, 0, Math.PI * 2);
-        context.stroke();
+    const context = canvasRef.current?.getContext('2d');
+    if (!context) return;
+    let frame = 0;
+    let last = performance.now();
+    let lastProgress = -1;
+    const tick = (now: number) => {
+      // A queued animation frame may predate performance.now() on the first tick.
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
+      last = now;
+      const scenes = lesson.scenes;
+      if (playingRef.current || recordingRef.current) {
+        sceneTimeRef.current += dt;
+        const duration = sceneDuration(scenes[shownIndexRef.current] || scenes[0]);
+        if (sceneTimeRef.current >= duration) {
+          if (shownIndexRef.current < scenes.length - 1) {
+            shownIndexRef.current += 1;
+            sceneTimeRef.current = 0;
+            onSceneChangeRef.current(shownIndexRef.current);
+          } else if (recordingRef.current) {
+            sceneTimeRef.current = duration;
+            recordingRef.current = false;
+            const recorder = recorderRef.current;
+            if (recorder && recorder.state !== 'inactive') recorder.stop();
+          } else {
+            sceneTimeRef.current = duration;
+            playingRef.current = false;
+            setPreviewPlaying(false);
+          }
+        }
+        if (recordingRef.current) {
+          const before = scenes.slice(0, shownIndexRef.current).reduce((s, sc) => s + sceneDuration(sc), 0);
+          const total = scenes.reduce((s, sc) => s + sceneDuration(sc), 0);
+          const pct = Math.min(99, Math.floor(((before + sceneTimeRef.current) / total) * 100));
+          if (pct !== lastProgress) { lastProgress = pct; setProgress(pct); }
+        }
       }
-      context.restore();
-
-      const drift = Math.sin(t * 1.25) * 18;
-      context.fillStyle = '#e7c568';
-      context.beginPath();
-      context.arc(1015 + drift, 258, 45 + Math.sin(t * 1.7) * 5, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = '#ef8968';
-      context.beginPath();
-      context.arc(1110 - drift * 0.55, 390, 27 + Math.cos(t * 1.4) * 5, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = '#9dc0ad';
-      context.beginPath();
-      context.roundRect(935, 450 + Math.sin(t) * 10, 225, 18, 9);
-      context.fill();
-
-      context.fillStyle = '#c3d9ca';
-      context.font = '700 17px "DM Sans", sans-serif';
-      context.letterSpacing = '3px';
-      context.fillText(`STUDYLOOM  /  SCENE ${String(sceneIndexRef.current + 1).padStart(2, '0')}`, 82, 88);
-      context.fillStyle = '#f4f2e8';
-      context.font = '800 54px Manrope, sans-serif';
-      context.letterSpacing = '-1px';
-      drawText(context, scene?.title || lesson.title, 82, 190, 760, 66, 2);
-      context.fillStyle = '#d0e0d8';
-      context.font = '400 25px "DM Sans", sans-serif';
-      context.letterSpacing = '0px';
-      drawText(context, scene?.visualCue || '', 84, 335, 760, 40, 3);
-      if (scene?.keyTerm) {
-        context.fillStyle = '#e7c568';
-        context.font = '700 17px "DM Sans", sans-serif';
-        context.fillText('KEY IDEA', 84, 545);
-        context.fillStyle = '#f4f2e8';
-        context.font = '700 30px Manrope, sans-serif';
-        context.fillText(scene.keyTerm.slice(0, 46), 84, 585);
-      }
-      const excerpt = scene?.narration || lesson.overview;
-      context.fillStyle = '#aec8bc';
-      context.font = '400 16px "DM Sans", sans-serif';
-      drawText(context, excerpt, 84, 645, 930, 23, 2);
-      const progressX = 82;
-      const progressY = 680;
-      context.fillStyle = 'rgba(255,255,255,.2)';
-      context.fillRect(progressX, progressY, 1110, 4);
-      context.fillStyle = '#e7c568';
-      context.fillRect(progressX, progressY, 1110 * ((sceneIndexRef.current + 1) / lesson.scenes.length), 4);
-      animationFrameRef.current = window.requestAnimationFrame(draw);
+      drawFrame(context, { lesson, sceneIndex: shownIndexRef.current, sceneTime: sceneTimeRef.current });
+      frame = requestAnimationFrame(tick);
     };
-    animationFrameRef.current = window.requestAnimationFrame(draw);
-    return () => {
-      active = false;
-      window.cancelAnimationFrame(animationFrameRef.current);
-    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [lesson]);
 
+  // Unmount cleanup only.
   useEffect(() => () => {
+    recordingRef.current = false;
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
+      recorder.ondataavailable = null;
       recorder.onstop = null;
       recorder.onerror = null;
       recorder.stop();
     }
-    captureStreamRef.current?.getTracks().forEach((track) => track.stop());
-    window.clearTimeout(timelineTimerRef.current);
-    if (videoUrl) URL.revokeObjectURL(videoUrl);
-  }, [videoUrl]);
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    if (videoUrlRef.current) URL.revokeObjectURL(videoUrlRef.current);
+  }, []);
+
+  const togglePreview = () => {
+    if (!previewPlaying) {
+      const last = lesson.scenes.length - 1;
+      if (shownIndexRef.current === last && sceneTimeRef.current >= sceneDuration(lesson.scenes[last])) sceneTimeRef.current = 0;
+    }
+    setPreviewPlaying((p) => !p);
+  };
+
+  const restartScene = () => { sceneTimeRef.current = 0; setPreviewPlaying(true); };
 
   const stopRecording = () => {
-    window.clearTimeout(timelineTimerRef.current);
+    recordingRef.current = false;
     if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
   };
 
-  const makeVideo = async () => {
+  const makeVideo = () => {
     setError('');
     setProgress(0);
     if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
@@ -159,29 +129,30 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     try {
       const canvas = canvasRef.current;
       if (!canvas) throw new Error('The animation surface is not ready. Please try again.');
-      const canvasStream = canvas.captureStream(30);
-      captureStreamRef.current = canvasStream;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      const stream = canvas.captureStream(30);
+      streamRef.current = stream;
       const preferred = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
       const mimeType = preferred.find((type) => MediaRecorder.isTypeSupported(type));
-      const recorder = new MediaRecorder(canvasStream, mimeType ? { mimeType } : undefined);
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       recorderRef.current = recorder;
       const chunks: BlobPart[] = [];
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) chunks.push(event.data);
-      };
+      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
       recorder.onerror = () => {
+        recordingRef.current = false;
+        stream.getTracks().forEach((track) => track.stop());
         setError('The browser stopped the recording unexpectedly. Try recording again.');
         setPhase('error');
-        window.clearTimeout(timelineTimerRef.current);
-        canvasStream.getTracks().forEach((track) => track.stop());
       };
       recorder.onstop = () => {
-        window.clearTimeout(timelineTimerRef.current);
-        canvasStream.getTracks().forEach((track) => track.stop());
+        recordingRef.current = false;
+        stream.getTracks().forEach((track) => track.stop());
+        if (recorderRef.current === recorder) recorderRef.current = null;
         if (chunks.length) {
-          const result = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
-          if (videoUrl) URL.revokeObjectURL(videoUrl);
-          setVideoUrl(URL.createObjectURL(result));
+          if (videoUrlRef.current) URL.revokeObjectURL(videoUrlRef.current);
+          const url = URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || 'video/webm' }));
+          videoUrlRef.current = url;
+          setVideoUrl(url);
           setProgress(100);
           setPhase('ready');
         } else {
@@ -189,36 +160,18 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
           setPhase('error');
         }
       };
-      const sceneStarts: number[] = [];
-      let cursor = 0;
-      sceneDurations.forEach((duration) => {
-        sceneStarts.push(cursor);
-        cursor += duration;
-      });
-      const startedAt = performance.now();
-      const updateTimeline = () => {
-        if (recorder.state !== 'recording') return;
-        const elapsed = (performance.now() - startedAt) / 1000;
-        if (elapsed >= totalDuration) {
-          setProgress(100);
-          onSceneChange(lesson.scenes.length - 1);
-          stopRecording();
-          return;
-        }
-        const nextIndex = sceneStarts.reduce((index, start, candidate) => elapsed >= start ? candidate : index, 0);
-        onSceneChange(nextIndex);
-        setProgress(Math.min(99, Math.round((elapsed / totalDuration) * 100)));
-        timelineTimerRef.current = window.setTimeout(updateTimeline, 120);
-      };
+      // Drive the export timeline internally from scene 1.
+      shownIndexRef.current = 0;
+      sceneTimeRef.current = 0;
+      onSceneChangeRef.current(0);
+      recordingRef.current = true;
       recorder.start(250);
       setPhase('recording');
-      onSceneChange(0);
-      updateTimeline();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'The video could not be rendered. Please try again.';
-      setError(message);
+      recordingRef.current = false;
+      setError(cause instanceof Error ? cause.message : 'The video could not be rendered. Please try again.');
       setPhase('error');
-      captureStreamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     }
   };
 
@@ -226,80 +179,84 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     const video = playbackRef.current;
     if (!video || !videoUrl) return;
     if (video.paused) {
-      try {
-        await video.play();
-      } catch {
-        setError('Playback could not start. Press play again to continue.');
-      }
+      try { await video.play(); } catch { setError('Playback could not start. Press play again to continue.'); }
     } else video.pause();
   };
 
   const replay = () => {
-    if (playbackRef.current) {
-      playbackRef.current.currentTime = 0;
-      playbackRef.current.play().then(() => setRecordedPlaying(true)).catch(() => setError('Playback could not start. Press play again to continue.'));
-    }
+    const video = playbackRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    video.play().catch(() => setError('Playback could not start. Press play again to continue.'));
   };
 
   const currentScene = lesson.scenes[sceneIndex];
   const recording = phase === 'preparing' || phase === 'recording';
+  const legacy = currentScene ? scenePlan(currentScene).legacy : false;
+  const fileName = `${lesson.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'studyloom-lesson'}.webm`;
+
   return (
     <div className="lesson-video-shell mb-5 overflow-hidden rounded-[20px] bg-[#173c3a] text-white" data-testid="panel-lesson-video">
       <div className="relative aspect-video w-full overflow-hidden">
-        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="absolute inset-0 h-full w-full object-cover" role="img" aria-label={`Animated lesson scene ${sceneIndex + 1}: ${currentScene?.title}`} data-testid="canvas-lesson-video" />
-        <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/20 bg-[#173c3a]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#d4e7dc] backdrop-blur-sm sm:left-6 sm:top-6">
-          <span className={`h-2 w-2 rounded-full ${phase === 'recording' ? 'animate-pulse bg-[#ef8968]' : 'bg-[#e7c568]'}`} />
-          {phase === 'recording' ? 'Rendering video' : `Scene ${String(sceneIndex + 1).padStart(2, '0')} / ${String(lesson.scenes.length).padStart(2, '0')}`}
-        </div>
-        {sceneIndex > 0 && (
-          <div className="absolute bottom-4 left-4 max-w-[70%] rounded-xl border border-white/15 bg-[#173c3a]/75 px-3 py-2 text-[11px] leading-4 text-[#d5e2db] backdrop-blur-sm sm:bottom-6 sm:left-6 sm:px-4 sm:py-3">
-            <span className="mb-1 block text-[9px] font-bold uppercase tracking-[.14em] text-[#e7c568]">Now exploring</span>
-            {currentScene?.visualCue}
-          </div>
+        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} className="absolute inset-0 h-full w-full" role="img" aria-label={`Animated diagram for scene ${sceneIndex + 1}: ${currentScene?.title}`} data-testid="canvas-lesson-video" />
+        {!recording && (
+          <button type="button" onClick={togglePreview} className="absolute bottom-3 right-3 grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-[#173c3a]/80 text-[#f4f2e8] backdrop-blur-sm transition hover:bg-[#1f4d4a] sm:bottom-auto sm:top-4" aria-label={previewPlaying ? 'Pause preview' : 'Play preview'} data-testid="button-preview-play-pause">
+            {previewPlaying ? <Pause size={16} /> : <Play size={16} />}
+          </button>
         )}
       </div>
+      {legacy && (
+        <p className="border-t border-white/10 bg-[#2a4a45] px-4 py-2 text-[11px] leading-4 text-[#f2d8a7]" data-testid="status-legacy-diagram">
+          This lesson was saved before topic-specific animations. Showing generic steps from the scene title; create the lesson again for a tailored diagram.
+        </p>
+      )}
       <div className="flex flex-col gap-3 border-t border-white/10 bg-[#153734] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-[#f4f2e8]" data-testid="text-video-scene-title">{currentScene?.title}</p>
-          <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#bbd0c5]">{currentScene?.narration}</p>
+          <p className="mt-1 text-[11px] text-[#bbd0c5]">{recording ? 'Recording plays every scene in order. Navigation is paused.' : 'Silent preview with captions. Scenes advance on their own.'}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {phase === 'ready' && (
+          {!recording && (
             <>
-              <button type="button" onClick={toggleRecordedPlayback} className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/15" data-testid="button-video-play-pause">
-                {recordedPlaying ? <Pause size={15} /> : <Play size={15} />}
-                {recordedPlaying ? 'Pause' : 'Play'}
+              <button type="button" onClick={togglePreview} className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/15" data-testid="button-preview-toggle">
+                {previewPlaying ? <Pause size={15} /> : <Play size={15} />}{previewPlaying ? 'Pause' : 'Play'}
               </button>
-              <button type="button" onClick={replay} className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition hover:bg-white/15" aria-label="Replay video" data-testid="button-video-replay"><RotateCcw size={15} /></button>
-              <a href={videoUrl} download={`${lesson.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'studyloom-lesson'}.webm`} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#e7c568] px-3 text-xs font-extrabold text-[#23413c] transition hover:bg-[#f0d77f]" data-testid="link-download-video">
-                <Download size={15} /> Download
-              </a>
+              <button type="button" onClick={restartScene} className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white transition hover:bg-white/15" aria-label="Restart scene animation" data-testid="button-restart-scene"><RotateCcw size={15} /></button>
             </>
           )}
-          {phase !== 'ready' && phase !== 'recording' && (
-            <button type="button" onClick={makeVideo} disabled={recording} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#e7c568] px-4 py-2 text-xs font-extrabold text-[#23413c] transition hover:bg-[#f0d77f] disabled:cursor-wait disabled:opacity-70" data-testid="button-create-video">
-              {recording ? <LoaderCircle size={15} className="animate-spin" /> : <Video size={15} />}
-              {phase === 'error' ? 'Try video again' : phase === 'unsupported' ? 'Try again' : 'Render lesson video'}
+          {phase === 'ready' && (
+            <a href={videoUrl} download={fileName} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#e7c568] px-3 text-xs font-extrabold text-[#23413c] transition hover:bg-[#f0d77f]" data-testid="link-download-video"><Download size={15} /> Download</a>
+          )}
+          {!recording && (
+            <button type="button" onClick={makeVideo} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold transition ${phase === 'ready' ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-[#e7c568] text-[#23413c] hover:bg-[#f0d77f]'}`} data-testid="button-create-video">
+              <Video size={15} />
+              {phase === 'ready' ? 'Render again' : phase === 'error' || phase === 'unsupported' ? 'Try video again' : 'Render lesson video'}
             </button>
           )}
-          {phase === 'recording' && (
-            <button type="button" onClick={stopRecording} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ef8968] px-4 text-xs font-extrabold text-[#352e28] transition hover:bg-[#f49a7e]" data-testid="button-stop-rendering"><Pause size={15} /> Stop render</button>
+          {recording && (
+            <button type="button" onClick={stopRecording} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ef8968] px-4 text-xs font-extrabold text-[#352e28] transition hover:bg-[#f49a7e]" data-testid="button-stop-rendering"><Square size={13} /> Stop render</button>
           )}
         </div>
       </div>
       {recording && (
-        <div className="border-t border-white/10 px-4 pb-4 sm:px-5" role="status" aria-live="polite" data-testid="status-video-rendering">
+        <div className="border-t border-white/10 px-4 py-3 sm:px-5" role="status" aria-live="polite" data-testid="status-video-rendering">
           <div className="mb-2 flex items-center justify-between text-[10px] font-semibold text-[#bed2c7]">
-            <span>{phase === 'preparing' ? 'Preparing the animation…' : 'Recording animated scenes and captions…'}</span>
-            <span>{phase === 'preparing' ? '—' : `${progress}%`}</span>
+            <span className="flex items-center gap-2"><LoaderCircle size={12} className="animate-spin" /> Recording animated scenes and captions. Keep this tab visible.</span>
+            <span>{progress}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#e7c568] transition-[width] duration-200" style={{ width: `${phase === 'preparing' ? 7 : progress}%` }} /></div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#e7c568] transition-[width] duration-200" style={{ width: `${Math.max(3, progress)}%` }} /></div>
         </div>
       )}
       {phase === 'ready' && (
         <div className="border-t border-white/10 p-3 sm:p-4">
-          <video ref={playbackRef} src={videoUrl} controls playsInline onPlay={() => setRecordedPlaying(true)} onPause={() => setRecordedPlaying(false)} onEnded={() => setRecordedPlaying(false)} className="w-full rounded-xl bg-black" aria-label="Rendered animated lesson video with captions" data-testid="video-rendered-output" />
-          <p className="mt-2 text-[10px] text-[#bed2c7]" data-testid="status-video-ready">Your captioned video is ready to play or download.</p>
+          <video ref={playbackRef} src={videoUrl} controls playsInline onPlay={() => setRecordedPlaying(true)} onPause={() => setRecordedPlaying(false)} onEnded={() => setRecordedPlaying(false)} className="w-full rounded-xl bg-[#0e2624]" aria-label="Rendered animated lesson video with captions" data-testid="video-rendered-output" />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[10px] text-[#bed2c7]" data-testid="status-video-ready">Your captioned video is ready to play or download.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={toggleRecordedPlayback} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/10 px-2.5 text-[11px] font-bold text-white hover:bg-white/15" data-testid="button-video-play-pause">{recordedPlaying ? <Pause size={13} /> : <Play size={13} />}{recordedPlaying ? 'Pause' : 'Play'}</button>
+              <button type="button" onClick={replay} className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white hover:bg-white/15" aria-label="Replay video" data-testid="button-video-replay"><RotateCcw size={13} /></button>
+            </div>
+          </div>
         </div>
       )}
       {phase === 'unsupported' && <p className="border-t border-white/10 px-4 py-3 text-xs leading-5 text-[#f2d8a7]" role="alert" data-testid="status-video-unsupported">Video recording is not supported in this browser. Try the latest Chrome, Edge, or Firefox to render a downloadable WebM.</p>}

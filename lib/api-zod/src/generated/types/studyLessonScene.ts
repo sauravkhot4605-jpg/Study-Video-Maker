@@ -5,11 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudySceneAnimation } from './studySceneAnimation';
 
 export interface StudyLessonScene {
   title: string;
   narration: string;
   visualCue: string;
+  animation?: StudySceneAnimation;
   /** @nullable */
   keyTerm: string | null;
   /** @nullable */

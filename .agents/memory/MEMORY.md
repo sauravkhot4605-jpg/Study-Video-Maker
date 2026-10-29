@@ -1,0 +1,2 @@
+- [Lesson animation safety](lesson-animation.md) — AI plans use constrained diagram data, not executable drawing code.
+- [Animation clock boundaries](animation-clock.md) — frame timestamps may predate initialization; clamp elapsed time before indexing captions.

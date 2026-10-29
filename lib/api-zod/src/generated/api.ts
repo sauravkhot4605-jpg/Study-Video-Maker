@@ -32,6 +32,13 @@ export const GenerateStudyLessonBody = zod.object({
   "duration": zod.enum(['short', 'standard', 'detailed'])
 })
 
+export const generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax = 48;
+
+export const generateStudyLessonResponseScenesItemAnimationNodesMin = 2;
+export const generateStudyLessonResponseScenesItemAnimationNodesMax = 5;
+
+export const generateStudyLessonResponseScenesItemAnimationCaptionMax = 160;
+
 export const generateStudyLessonResponseScenesMin = 3;
 export const generateStudyLessonResponseScenesMax = 8;
 
@@ -46,6 +53,14 @@ export const GenerateStudyLessonResponse = zod.object({
   "title": zod.string(),
   "narration": zod.string(),
   "visualCue": zod.string(),
+  "animation": zod.object({
+  "layout": zod.enum(['flow', 'cycle', 'orbit', 'comparison']),
+  "nodes": zod.array(zod.object({
+  "label": zod.string().max(generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax),
+  "icon": zod.enum(['sun', 'water', 'plant', 'molecule', 'planet', 'person', 'book', 'energy', 'number', 'cloud', 'cell', 'gear', 'lightbulb', 'atom', 'heart'])
+})).min(generateStudyLessonResponseScenesItemAnimationNodesMin).max(generateStudyLessonResponseScenesItemAnimationNodesMax),
+  "caption": zod.string().max(generateStudyLessonResponseScenesItemAnimationCaptionMax)
+}).optional(),
   "keyTerm": zod.string().nullable(),
   "keyTermDefinition": zod.string().nullable()
 })).min(generateStudyLessonResponseScenesMin).max(generateStudyLessonResponseScenesMax)
