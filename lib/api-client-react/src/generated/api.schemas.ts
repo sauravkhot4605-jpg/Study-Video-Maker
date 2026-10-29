@@ -41,7 +41,20 @@ export const StudyLessonInputDuration = {
   detailed: 'detailed',
 } as const;
 
+export type StudyLanguage = typeof StudyLanguage[keyof typeof StudyLanguage];
+
+
+export const StudyLanguage = {
+  en: 'en',
+  hi: 'hi',
+  mr: 'mr',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+} as const;
+
 export interface StudyLessonInput {
+  language?: StudyLanguage;
   /**
      * @minLength 3
      * @maxLength 12000
@@ -166,6 +179,7 @@ export interface StudyLessonScene {
 }
 
 export interface StudyLesson {
+  language?: StudyLanguage;
   title: string;
   overview: string;
   estimatedMinutes: number;
@@ -178,6 +192,7 @@ export interface StudyLesson {
 }
 
 export interface StudyLessonNarrationInput {
+  language?: StudyLanguage;
   /**
      * @minLength 1
      * @maxLength 12000

@@ -14,3 +14,9 @@ Specialized illustrations must match the actual concept and quantities in the na
 **Why:** A visually convincing but mismatched science or mathematics model can teach incorrect relationships. In particular, a fixed reaction model is not a general chemical-reaction simulator.
 
 **How to apply:** Constrain template selection in the generation prompt, validate numerical parameters, and describe specialized models honestly.
+
+Use schema-constrained AI output for lesson generation rather than relying on a prompt to preserve internal animation identifiers.
+
+**Why:** During multilingual generation, prompt-only JSON output repeatedly produced unsupported icon identifiers even when instructed to keep enum values in English. Translate teaching content, not renderer identifiers.
+
+**How to apply:** Keep strict structured-output constraints aligned with the API schema. Where strict output represents optional fields as null, normalize only those optional fields back to omission; retain meaningful nullable values such as absent key terms.

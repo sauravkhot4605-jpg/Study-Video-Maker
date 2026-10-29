@@ -5,11 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudyLanguage } from './studyLanguage';
 import type { StudyLessonInputDuration } from './studyLessonInputDuration';
 import type { StudyLessonInputLearnerLevel } from './studyLessonInputLearnerLevel';
 import type { StudyLessonInputSourceType } from './studyLessonInputSourceType';
 
 export interface StudyLessonInput {
+  language?: StudyLanguage;
   /**
      * @minLength 3
      * @maxLength 12000

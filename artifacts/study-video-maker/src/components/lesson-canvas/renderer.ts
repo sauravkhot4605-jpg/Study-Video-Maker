@@ -1,6 +1,7 @@
 import type { StudyLesson, StudyLessonScene, StudySceneAnimation } from '@workspace/api-client-react';
 import { drawIcon } from './icons';
 import { drawVisual, resolveVisual } from './illustration';
+import { localizedContext } from './language';
 
 export const WIDTH = 1280;
 export const HEIGHT = 720;
@@ -151,11 +152,12 @@ function drawDiagram(c: CanvasRenderingContext2D, plan: Plan, t: number, duratio
   plan.nodes.forEach((node, i) => drawNode(c, pts[i], node.label, node.icon, NODE_COLORS[i % 5], reveal(i), t + i, plan.layout === 'orbit' && i === 0 ? radius + 10 : radius, i === activeIdx && reveal(n - 1) > 1));
 }
 
-export type FrameInput = { lesson: StudyLesson; sceneIndex: number; sceneTime: number };
+export type FrameInput = { lesson: StudyLesson; sceneIndex: number; sceneTime: number; durationOverride?: number };
 
-export function drawFrame(c: CanvasRenderingContext2D, { lesson, sceneIndex, sceneTime }: FrameInput) {
+export function drawFrame(c: CanvasRenderingContext2D, { lesson, sceneIndex, sceneTime, durationOverride }: FrameInput) {
+  c = localizedContext(c, lesson.language);
   const scene = lesson.scenes[sceneIndex] || lesson.scenes[0];
-  const duration = sceneDuration(scene);
+  const duration = Math.max(0.1, durationOverride ?? sceneDuration(scene));
   const t = Math.max(0, Number.isFinite(sceneTime) ? sceneTime : 0);
   const g = c.createLinearGradient(0, 0, WIDTH, HEIGHT);
   g.addColorStop(0, C.bg1); g.addColorStop(1, C.bg2);

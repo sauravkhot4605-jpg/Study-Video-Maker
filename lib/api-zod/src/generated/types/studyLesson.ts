@@ -5,9 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudyLanguage } from './studyLanguage';
 import type { StudyLessonScene } from './studyLessonScene';
 
 export interface StudyLesson {
+  language?: StudyLanguage;
   title: string;
   overview: string;
   estimatedMinutes: number;

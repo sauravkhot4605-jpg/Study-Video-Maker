@@ -26,6 +26,7 @@ export const generateStudyLessonBodySourceMax = 12000;
 
 
 export const GenerateStudyLessonBody = zod.object({
+  "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
   "source": zod.string().min(generateStudyLessonBodySourceMin).max(generateStudyLessonBodySourceMax),
   "sourceType": zod.enum(['topic', 'text']),
   "learnerLevel": zod.enum(['primary', 'middle', 'high', 'college', 'adult']),
@@ -50,6 +51,7 @@ export const generateStudyLessonResponseScenesMax = 8;
 
 
 export const GenerateStudyLessonResponse = zod.object({
+  "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
   "title": zod.string(),
   "overview": zod.string(),
   "estimatedMinutes": zod.int(),
@@ -107,6 +109,7 @@ export const narrateStudyLessonBodyTextMax = 12000;
 
 
 export const NarrateStudyLessonBody = zod.object({
+  "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
   "text": zod.string().min(1).max(narrateStudyLessonBodyTextMax)
 })
 

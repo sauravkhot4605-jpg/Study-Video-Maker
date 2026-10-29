@@ -9,6 +9,7 @@
 export * from './errorResponse';
 export * from './healthStatus';
 export * from './studyFractionVisual';
+export * from './studyLanguage';
 export * from './studyLesson';
 export * from './studyLessonInput';
 export * from './studyLessonInputDuration';

@@ -146,6 +146,8 @@ components:
     StudyLessonInput:
       type: object
       properties:
+        language:
+          $ref: "#/components/schemas/StudyLanguage"
         source:
           type: string
           minLength: 3
@@ -160,6 +162,9 @@ components:
           type: string
           enum: [short, standard, detailed]
       required: [source, sourceType, learnerLevel, duration]
+    StudyLanguage:
+      type: string
+      enum: [en, hi, mr, es, fr, de]
     StudyTextScanInput:
       type: object
       properties:
@@ -240,6 +245,8 @@ components:
     StudyLesson:
       type: object
       properties:
+        language:
+          $ref: "#/components/schemas/StudyLanguage"
         title:
           type: string
         overview:
@@ -260,6 +267,8 @@ components:
     StudyLessonNarrationInput:
       type: object
       properties:
+        language:
+          $ref: "#/components/schemas/StudyLanguage"
         text:
           type: string
           minLength: 1
