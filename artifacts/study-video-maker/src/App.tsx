@@ -1,37 +1,31 @@
-import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import {
-  useGenerateStudyLesson,
-  useNarrateStudyLesson,
-} from '@workspace/api-client-react';
+import { LessonVideoPlayer } from '@/components/lesson-video-player';
+import { useGenerateStudyLesson } from '@workspace/api-client-react';
 import type { StudyLesson, StudyLessonInput } from '@workspace/api-client-react';
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
-  AudioLines,
   BookOpen,
   Check,
   ChevronDown,
   CircleHelp,
   Clock3,
   GraduationCap,
-  Headphones,
   Layers3,
   Lightbulb,
   LoaderCircle,
   LockKeyhole,
-  Pause,
   Play,
   Plus,
   RotateCcw,
   Sparkles,
   Trash2,
-  Volume2,
   X,
 } from 'lucide-react';
 import {
@@ -88,11 +82,7 @@ function Home() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [notice, setNotice] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const generateLesson = useGenerateStudyLesson();
-  const narrateLesson = useNarrateStudyLesson();
 
   useEffect(() => {
     try {
@@ -123,7 +113,6 @@ function Home() {
       return;
     }
     setNotice('');
-    setAudioUrl('');
     try {
       const result = await generateLesson.mutateAsync({
         data: { source: source.trim(), sourceType, learnerLevel, duration },
@@ -136,46 +125,10 @@ function Home() {
     }
   };
 
-  const handleNarration = async () => {
-    if (!lesson) return;
-    if (audioUrl && audioRef.current) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-        setIsAudioPlaying(false);
-      } else {
-        try {
-          await audioRef.current.play();
-          setIsAudioPlaying(true);
-        } catch {
-          setNotice('Audio could not start. Try pressing play once more.');
-        }
-      }
-      return;
-    }
-    try {
-      const audio = await narrateLesson.mutateAsync({
-        data: { text: lesson.scenes.map((scene) => scene.narration).join('\n\n') },
-      });
-      const encoded = audio.audioBase64.startsWith('data:')
-        ? audio.audioBase64
-        : `data:${audio.mimeType};base64,${audio.audioBase64}`;
-      setAudioUrl(encoded);
-      window.setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.play().then(() => setIsAudioPlaying(true)).catch(() => setNotice('Audio is ready. Press play to listen.'));
-        }
-      }, 50);
-    } catch {
-      setNotice('Narration is not available right now. Your lesson is still here to read.');
-    }
-  };
-
   const openSavedLesson = (record: SavedLesson) => {
     setLesson(record.lesson);
     setActiveLessonId(record.id);
     setSceneIndex(0);
-    setAudioUrl('');
-    setIsAudioPlaying(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -185,7 +138,6 @@ function Home() {
     if (activeLessonId === id) {
       setLesson(null);
       setActiveLessonId(null);
-      setAudioUrl('');
     }
   };
 
@@ -193,8 +145,6 @@ function Home() {
     setLesson(null);
     setActiveLessonId(null);
     setSceneIndex(0);
-    setAudioUrl('');
-    setIsAudioPlaying(false);
   };
 
   const advanceScene = (direction: number) => {
@@ -241,7 +191,7 @@ function Home() {
               Big topic. Little steps.<br className="hidden sm:block" /> <span className="text-[#39806e]">A lesson that sticks.</span>
             </h1>
             <p className="mt-3 max-w-[540px] text-[14px] leading-6 text-[#5e7470] sm:text-[15px]">
-              Turn what you’re studying into a clear, animated explainer you can watch, hear, and come back to.
+              Turn what you’re studying into a clear, captioned explainer you can watch and come back to.
             </p>
           </div>
           <div className="absolute bottom-6 right-8 hidden items-end gap-2 opacity-70 sm:flex" aria-hidden="true">
@@ -311,7 +261,7 @@ function Home() {
                   <div className="mt-7 flex flex-col-reverse items-start justify-between gap-4 border-t border-[#efede6] pt-5 sm:flex-row sm:items-center">
                     <p className="flex items-center gap-2 text-[11px] leading-5 text-[#8b938d]"><LockKeyhole size={13} className="shrink-0 text-[#62998b]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
                     <button type="submit" disabled={!source.trim()} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#176e5c] px-5 py-3.5 text-sm font-bold text-white shadow-[0_7px_15px_rgba(23,110,92,.17)] transition hover:-translate-y-0.5 hover:bg-[#105b4b] hover:shadow-[0_10px_18px_rgba(23,110,92,.2)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
-                      <Sparkles size={16} /> Make my lesson <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                      <Sparkles size={16} /> Create lesson video <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
                 </form>
@@ -338,7 +288,7 @@ function Home() {
             {lesson && currentScene && (
               <section className="animate-rise overflow-hidden rounded-[24px] border border-[#e7e2d7] bg-white shadow-[0_12px_35px_rgba(53,64,57,.045)]" data-testid="panel-generated-lesson">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efede6] px-5 py-4 sm:px-7">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-[#478477]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-[#eaf3ee]"><Check size={15} /></span> Your lesson is ready</div>
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-[#478477]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-[#eaf3ee]"><Check size={15} /></span> Your video plan is ready</div>
                   <button onClick={startFresh} className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-[#78827e] transition hover:bg-[#f5f4ef] hover:text-[#344844]" data-testid="button-start-another"><RotateCcw size={13} /> Start another</button>
                 </div>
 
@@ -352,43 +302,19 @@ function Home() {
                       <span className="flex items-center gap-1.5 rounded-full bg-[#f5f2e8] px-3 py-1.5 text-[11px] font-semibold text-[#81754e]"><Clock3 size={13} /> About {lesson.estimatedMinutes} min</span>
                     </div>
 
-                    <div className="relative mb-5 overflow-hidden rounded-[20px] bg-[#264e4b] p-5 text-white sm:p-7">
-                      <div className="pointer-events-none absolute -right-8 -top-24 h-64 w-64 rounded-full border border-white/10">
-                        <div className="absolute inset-8 rounded-full border border-white/10" />
-                        <div className="absolute inset-16 rounded-full border border-white/10" />
-                      </div>
-                      <div className="relative z-10 flex min-h-[192px] flex-col justify-between sm:min-h-[218px]">
-                        <div className="flex items-center justify-between">
-                          <span className="rounded-full border border-white/20 bg-white/[.08] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-[#cde2d7]">Scene {String(sceneIndex + 1).padStart(2, '0')}</span>
-                          <span className="text-[11px] font-semibold text-white/60">{String(lesson.scenes.length).padStart(2, '0')} scenes</span>
-                        </div>
-                        <div className="max-w-[650px] py-6">
-                          <div className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#d9bd69]">Scene {sceneIndex + 1}</div>
-                          <h3 key={currentScene.title} className="animate-rise font-[Manrope] text-2xl font-extrabold leading-tight tracking-[-.04em] sm:text-[32px]" data-testid="text-scene-title">{currentScene.title}</h3>
-                          <p className="mt-3 max-w-[590px] text-[13px] leading-6 text-[#d5e2db] sm:text-[14px]" data-testid="text-scene-visual-cue">{currentScene.visualCue}</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            {lesson.scenes.map((scene, index) => <button key={`${scene.title}-${index}`} onClick={() => setSceneIndex(index)} aria-label={`Go to scene ${index + 1}`} aria-current={sceneIndex === index ? 'step' : undefined} className={`h-1.5 rounded-full transition-all ${sceneIndex === index ? 'w-8 bg-[#e8c764]' : 'w-3 bg-white/30 hover:bg-white/55'}`} data-testid={`button-scene-${index + 1}`} />)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => advanceScene(-1)} aria-label="Previous scene" className="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/[.07] transition hover:bg-white/15" data-testid="button-previous-scene"><ArrowLeft size={15} /></button>
-                            <button onClick={() => advanceScene(1)} aria-label="Next scene" className="grid h-9 w-9 place-items-center rounded-full bg-[#e8c764] text-[#264e4b] transition hover:bg-[#f0d77f]" data-testid="button-next-scene"><ArrowRight size={15} /></button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <LessonVideoPlayer
+                      key={activeLessonId || lesson.title}
+                      lesson={lesson}
+                      sceneIndex={sceneIndex}
+                      onSceneChange={setSceneIndex}
+                    />
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#ece9e0] bg-[#fbfaf7] px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <button onClick={handleNarration} disabled={narrateLesson.isPending} className="flex h-10 items-center gap-2 rounded-xl bg-[#176e5c] px-4 text-xs font-bold text-white transition hover:bg-[#105b4b] disabled:cursor-wait disabled:opacity-70" data-testid="button-listen-to-lesson">
-                          {narrateLesson.isPending ? <LoaderCircle size={15} className="animate-spin" /> : isAudioPlaying ? <Pause size={15} /> : audioUrl ? <Play size={15} /> : <Volume2 size={15} />}
-                          {narrateLesson.isPending ? 'Preparing audio…' : isAudioPlaying ? 'Pause narration' : audioUrl ? 'Play narration' : 'Listen to lesson'}
-                        </button>
-                        <span className="hidden text-[11px] text-[#929b94] sm:block">Narrated from beginning to end</span>
+                    <div className="mb-5 flex items-center justify-between gap-3 rounded-xl bg-[#f8f7f2] px-3 py-2.5">
+                      <span className="text-[11px] font-semibold text-[#697872]" aria-live="polite">Scene {sceneIndex + 1} of {lesson.scenes.length}</span>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => advanceScene(-1)} aria-label="Previous scene" className="grid h-9 w-9 place-items-center rounded-full border border-[#e5e3d9] bg-white text-[#48625b] transition hover:bg-[#edf3ee]" data-testid="button-previous-scene"><ArrowLeft size={15} /></button>
+                        <button onClick={() => advanceScene(1)} aria-label="Next scene" className="grid h-9 w-9 place-items-center rounded-full bg-[#176e5c] text-white transition hover:bg-[#105b4b]" data-testid="button-next-scene"><ArrowRight size={15} /></button>
                       </div>
-                      <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#84908a]"><AudioLines size={14} /> Audio narration</span>
-                      {audioUrl && <audio ref={audioRef} src={audioUrl} onEnded={() => setIsAudioPlaying(false)} onPause={() => setIsAudioPlaying(false)} onPlay={() => setIsAudioPlaying(true)} className="hidden" />}
                     </div>
 
                     {currentScene.keyTerm && (
@@ -419,7 +345,7 @@ function Home() {
                       ))}
                     </ol>
                     <div className="mt-6 rounded-2xl bg-[#e9efe8] p-4">
-                      <div className="flex items-center gap-2 text-[11px] font-bold text-[#3d7568]"><Headphones size={15} /> Keep the curious going</div>
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-[#3d7568]"><BookOpen size={15} /> Keep the curious going</div>
                       <p className="mt-1.5 text-[11px] leading-5 text-[#70827a]">Move through each scene at your own pace. The little details are where it clicks.</p>
                     </div>
                   </aside>
