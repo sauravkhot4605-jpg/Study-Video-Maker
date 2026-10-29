@@ -16,3 +16,6 @@ export * from './studyLessonInputSourceType';
 export * from './studyLessonNarration';
 export * from './studyLessonNarrationInput';
 export * from './studyLessonScene';
+export * from './studyTextScanInput';
+export * from './studyTextScanInputMimeType';
+export * from './studyTextScanResult';

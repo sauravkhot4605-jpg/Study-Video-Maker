@@ -53,6 +53,28 @@ export const GenerateStudyLessonResponse = zod.object({
 
 
 /**
+ * @summary Extract study text from a photo
+ */
+export const scanStudyTextBodyImageBase64Min = 32;
+export const scanStudyTextBodyImageBase64Max = 3500000;
+
+
+
+export const ScanStudyTextBody = zod.object({
+  "imageBase64": zod.string().min(scanStudyTextBodyImageBase64Min).max(scanStudyTextBodyImageBase64Max),
+  "mimeType": zod.enum(['image/jpeg'])
+})
+
+export const scanStudyTextResponseTextMax = 12000;
+
+
+
+export const ScanStudyTextResponse = zod.object({
+  "text": zod.string().min(1).max(scanStudyTextResponseTextMax)
+})
+
+
+/**
  * @summary Create narration audio for a lesson
  */
 export const narrateStudyLessonBodyTextMax = 12000;

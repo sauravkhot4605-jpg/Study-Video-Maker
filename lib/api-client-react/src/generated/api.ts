@@ -25,7 +25,9 @@ import type {
   StudyLesson,
   StudyLessonInput,
   StudyLessonNarration,
-  StudyLessonNarrationInput
+  StudyLessonNarrationInput,
+  StudyTextScanInput,
+  StudyTextScanResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -219,6 +221,94 @@ export const useGenerateStudyLesson = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getGenerateStudyLessonMutationOptions(options));
+    }
+
+export const getScanStudyTextUrl = () => {
+
+
+
+
+  return `/api/study-lessons/scan-text`
+}
+
+/**
+ * @summary Extract study text from a photo
+ */
+export const scanStudyText = async (studyTextScanInput: StudyTextScanInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyTextScanResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudyTextScanResult>(getScanStudyTextUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studyTextScanInput)
+  }
+);}
+
+
+
+
+
+export const getScanStudyTextMutationKey = () => ['scanStudyText'] as const;
+
+export const getScanStudyTextMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanStudyText>>, TError,ScanStudyTextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scanStudyText>>, TError,ScanStudyTextMutationVariables, TContext> => {
+
+const mutationKey = getScanStudyTextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scanStudyText>>, ScanStudyTextMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  scanStudyText(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScanStudyTextMutationResult = NonNullable<Awaited<ReturnType<typeof scanStudyText>>>
+    export type ScanStudyTextMutationBody = BodyType<StudyTextScanInput>
+    export type ScanStudyTextMutationError = ErrorType<ErrorResponse>
+    export type ScanStudyTextMutationVariables = {data: BodyType<StudyTextScanInput>}
+
+    /**
+ * @summary Extract study text from a photo
+ */
+export const useScanStudyText = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanStudyText>>, TError,ScanStudyTextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scanStudyText>>,
+        TError,
+        ScanStudyTextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getScanStudyTextMutationOptions(options));
     }
 
 export const getNarrateStudyLessonUrl = () => {

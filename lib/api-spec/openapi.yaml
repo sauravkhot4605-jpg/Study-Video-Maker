@@ -11,7 +11,7 @@ tags:
   - name: health
     description: Health operations
   - name: study-lessons
-    description: AI-generated narrated study lessons
+    description: AI-generated study lessons from topics, text, and scanned pages
 paths:
   /healthz:
     get:
@@ -52,6 +52,48 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: Lesson generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /study-lessons/scan-text:
+    post:
+      operationId: scanStudyText
+      tags: [study-lessons]
+      summary: Extract study text from a photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyTextScanInput"
+      responses:
+        "200":
+          description: Extracted text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyTextScanResult"
+        "400":
+          description: Invalid image request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Image contains too much text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: No readable text found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Text extraction failed
           content:
             application/json:
               schema:
@@ -118,6 +160,25 @@ components:
           type: string
           enum: [short, standard, detailed]
       required: [source, sourceType, learnerLevel, duration]
+    StudyTextScanInput:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          minLength: 32
+          maxLength: 3500000
+        mimeType:
+          type: string
+          enum: [image/jpeg]
+      required: [imageBase64, mimeType]
+    StudyTextScanResult:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 12000
+      required: [text]
     StudyLessonScene:
       type: object
       properties:

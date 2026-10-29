@@ -1,17 +1,18 @@
-import { useEffect, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { LessonVideoPlayer } from '@/components/lesson-video-player';
-import { useGenerateStudyLesson } from '@workspace/api-client-react';
+import { useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
 import type { StudyLesson, StudyLessonInput } from '@workspace/api-client-react';
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Camera,
   Check,
   ChevronDown,
   CircleHelp,
@@ -72,6 +73,56 @@ function readSavedLessons(): SavedLesson[] {
   }
 }
 
+async function prepareScanImage(file: File): Promise<{ imageBase64: string; mimeType: 'image/jpeg' }> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Choose a photo or image file to scan.');
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    throw new Error('This photo is too large. Take a closer picture or choose a smaller image.');
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = imageUrl;
+    await image.decode();
+
+    const maxEdge = 2000;
+    const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('This browser could not prepare the photo. Try another image.');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const compressed = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('This photo could not be prepared. Try another image.')),
+        'image/jpeg',
+        0.82,
+      );
+    });
+    if (compressed.size > 2_500_000) {
+      throw new Error('This photo is still too large. Take a closer picture of one section and try again.');
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string'
+        ? resolve(reader.result)
+        : reject(new Error('This photo could not be read.'));
+      reader.onerror = () => reject(new Error('This photo could not be read.'));
+      reader.readAsDataURL(compressed);
+    });
+    const imageBase64 = dataUrl.split(',')[1];
+    if (!imageBase64) throw new Error('This photo could not be prepared. Try another image.');
+    return { imageBase64, mimeType: 'image/jpeg' };
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
 function Home() {
   const [sourceType, setSourceType] = useState<SourceType>('topic');
   const [source, setSource] = useState('');
@@ -82,7 +133,10 @@ function Home() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [notice, setNotice] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const scanInputRef = useRef<HTMLInputElement>(null);
   const generateLesson = useGenerateStudyLesson();
+  const scanStudyText = useScanStudyText();
 
   useEffect(() => {
     try {
@@ -99,6 +153,41 @@ function Home() {
   }, [notice]);
 
   const currentScene = lesson?.scenes[sceneIndex];
+  const handleScanPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    setNotice('');
+    setIsScanning(true);
+    try {
+      const image = await prepareScanImage(file);
+      const result = await scanStudyText.mutateAsync({ data: image });
+      const extractedText = result.text.trim();
+      if (!extractedText) {
+        setNotice('No readable text found. Try a clearer, brighter photo.');
+        return;
+      }
+      setSourceType('text');
+      setSource(extractedText.slice(0, 12000));
+      setNotice('Text scanned. Review it above, then create your lesson video.');
+    } catch (cause) {
+      const errorData = cause && typeof cause === 'object' && 'data' in cause
+        ? (cause as { data?: { error?: unknown } }).data
+        : undefined;
+      setNotice(
+        typeof errorData?.error === 'string'
+          ? errorData.error
+          : cause instanceof Error
+            ? cause.message
+            : 'We could not read that photo. Try a clear, well-lit picture.',
+      );
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const saveLesson = (newLesson: StudyLesson) => {
     const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const record: SavedLesson = { id: newId, lesson: newLesson, savedAt: new Date().toISOString() };
@@ -234,6 +323,32 @@ function Home() {
                     {sourceType === 'text' && <div className="pointer-events-none absolute bottom-3 right-4 text-[10px] font-medium text-[#a3aaa5]">{source.length.toLocaleString()} / 12,000</div>}
                   </div>
 
+                  <input
+                    ref={scanInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleScanPhoto}
+                    hidden
+                    aria-label="Choose a study page photo"
+                    data-testid="input-scan-photo"
+                  />
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <button
+                      type="button"
+                      onClick={() => scanInputRef.current?.click()}
+                      disabled={isScanning}
+                      className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-xl border border-[#cfe0d4] bg-[#f3f8f3] px-3.5 py-2 text-xs font-bold text-[#317665] transition hover:bg-[#eaf3eb] disabled:cursor-wait disabled:opacity-70"
+                      data-testid="button-scan-photo"
+                    >
+                      {isScanning ? <LoaderCircle size={15} className="animate-spin" /> : <Camera size={15} />}
+                      {isScanning ? 'Reading your page…' : 'Scan a page with your camera'}
+                    </button>
+                    <p className="text-[11px] leading-5 text-[#89938d]">
+                      Take a photo or choose an image. We’ll extract the text for you to review; the photo isn’t saved.
+                    </p>
+                  </div>
+
                   <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_1.35fr]">
                     <label className="block">
                       <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">Explain it for</span>
@@ -260,7 +375,7 @@ function Home() {
 
                   <div className="mt-7 flex flex-col-reverse items-start justify-between gap-4 border-t border-[#efede6] pt-5 sm:flex-row sm:items-center">
                     <p className="flex items-center gap-2 text-[11px] leading-5 text-[#8b938d]"><LockKeyhole size={13} className="shrink-0 text-[#62998b]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
-                    <button type="submit" disabled={!source.trim()} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#176e5c] px-5 py-3.5 text-sm font-bold text-white shadow-[0_7px_15px_rgba(23,110,92,.17)] transition hover:-translate-y-0.5 hover:bg-[#105b4b] hover:shadow-[0_10px_18px_rgba(23,110,92,.2)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
+                    <button type="submit" disabled={!source.trim() || isScanning} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#176e5c] px-5 py-3.5 text-sm font-bold text-white shadow-[0_7px_15px_rgba(23,110,92,.17)] transition hover:-translate-y-0.5 hover:bg-[#105b4b] hover:shadow-[0_10px_18px_rgba(23,110,92,.2)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
                       <Sparkles size={16} /> Create lesson video <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>

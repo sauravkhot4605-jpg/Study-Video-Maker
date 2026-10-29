@@ -52,6 +52,30 @@ export interface StudyLessonInput {
   duration: StudyLessonInputDuration;
 }
 
+export type StudyTextScanInputMimeType = typeof StudyTextScanInputMimeType[keyof typeof StudyTextScanInputMimeType];
+
+
+export const StudyTextScanInputMimeType = {
+  'image/jpeg': 'image/jpeg',
+} as const;
+
+export interface StudyTextScanInput {
+  /**
+     * @minLength 32
+     * @maxLength 3500000
+     */
+  imageBase64: string;
+  mimeType: StudyTextScanInputMimeType;
+}
+
+export interface StudyTextScanResult {
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+}
+
 export interface StudyLessonScene {
   title: string;
   narration: string;
