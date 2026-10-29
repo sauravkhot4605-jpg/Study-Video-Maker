@@ -1,2 +1,3 @@
 - [Lesson animation safety](lesson-animation.md) — AI plans use constrained diagram data, not executable drawing code.
 - [Animation clock boundaries](animation-clock.md) — frame timestamps may predate initialization; clamp elapsed time before indexing captions.
+- [Dependency remediation](dependency-remediation.md) — parent upgrades can retain vulnerable transitives; verify resolved versions and preserve release-age protections.

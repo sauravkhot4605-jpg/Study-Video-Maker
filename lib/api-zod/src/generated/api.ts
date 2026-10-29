@@ -47,7 +47,7 @@ export const generateStudyLessonResponseScenesMax = 8;
 export const GenerateStudyLessonResponse = zod.object({
   "title": zod.string(),
   "overview": zod.string(),
-  "estimatedMinutes": zod.number().int(),
+  "estimatedMinutes": zod.int(),
   "keyTakeaways": zod.array(zod.string()),
   "scenes": zod.array(zod.object({
   "title": zod.string(),
