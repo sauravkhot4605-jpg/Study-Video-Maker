@@ -1,6 +1,6 @@
-# [Project name]
+# Studyloom
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Studyloom turns study topics and pasted text into simple, narrated video lessons for students and teachers.
 
 ## Run & Operate
 
@@ -22,15 +22,18 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/study-video-maker/` — lesson creation, playback, and local lesson library
+- `artifacts/api-server/src/routes/study-lessons.ts` — lesson-script and narration API
+- `lib/api-spec/openapi.yaml` — source of truth for the lesson API contract
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Lesson content and narration are generated on demand through Replit's OpenAI AI integration.
+- Saved lesson history stays in the current browser; lesson audio is generated when requested and not stored.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Students and teachers can enter a topic or paste study text, choose a learner level and lesson length, then generate a simple animated lesson with narration, scene-by-scene explanations, key terms, and takeaways. Recent lessons are saved locally on that device.
 
 ## User preferences
 
@@ -38,7 +41,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The generated lesson duration options must stay aligned with the labels in the frontend.
 
 ## Pointers
 

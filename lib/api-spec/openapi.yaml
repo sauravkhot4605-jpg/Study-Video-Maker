@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: study-lessons
+    description: AI-generated narrated study lessons
 paths:
   /healthz:
     get:
@@ -24,6 +26,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /study-lessons/generate:
+    post:
+      operationId: generateStudyLesson
+      tags: [study-lessons]
+      summary: Generate a study lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyLessonInput"
+      responses:
+        "200":
+          description: Generated lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyLesson"
+        "400":
+          description: Invalid lesson request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Lesson generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /study-lessons/narrate:
+    post:
+      operationId: narrateStudyLesson
+      tags: [study-lessons]
+      summary: Create narration audio for a lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyLessonNarrationInput"
+      responses:
+        "200":
+          description: Narration audio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyLessonNarration"
+        "400":
+          description: Invalid narration request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Narration generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +95,77 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    StudyLessonInput:
+      type: object
+      properties:
+        source:
+          type: string
+          minLength: 3
+          maxLength: 12000
+        sourceType:
+          type: string
+          enum: [topic, text]
+        learnerLevel:
+          type: string
+          enum: [primary, middle, high, college, adult]
+        duration:
+          type: string
+          enum: [short, standard, detailed]
+      required: [source, sourceType, learnerLevel, duration]
+    StudyLessonScene:
+      type: object
+      properties:
+        title:
+          type: string
+        narration:
+          type: string
+        visualCue:
+          type: string
+        keyTerm:
+          type: ["string", "null"]
+        keyTermDefinition:
+          type: ["string", "null"]
+      required: [title, narration, visualCue, keyTerm, keyTermDefinition]
+    StudyLesson:
+      type: object
+      properties:
+        title:
+          type: string
+        overview:
+          type: string
+        estimatedMinutes:
+          type: integer
+        keyTakeaways:
+          type: array
+          items:
+            type: string
+        scenes:
+          type: array
+          minItems: 3
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/StudyLessonScene"
+      required: [title, overview, estimatedMinutes, keyTakeaways, scenes]
+    StudyLessonNarrationInput:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 12000
+      required: [text]
+    StudyLessonNarration:
+      type: object
+      properties:
+        audioBase64:
+          type: string
+        mimeType:
+          type: string
+      required: [audioBase64, mimeType]
 

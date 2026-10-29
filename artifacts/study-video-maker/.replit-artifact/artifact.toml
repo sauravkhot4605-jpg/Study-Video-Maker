@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Study Video Maker"
+description = "An AI-powered study app for students and teachers that turns a topic or pasted text into a simple narrated video lesson with animated scenes, key takeaways, and a saved lesson library."
+version = "1.0.0"
+id = "artifacts/study-video-maker"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24287
+
+[services.development]
+run = "pnpm --filter @workspace/study-video-maker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/study-video-maker", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/study-video-maker/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24287"
+BASE_PATH = "/"
