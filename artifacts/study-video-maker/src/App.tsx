@@ -293,9 +293,9 @@ function Home() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#f6f4ed] text-[#263444]">
+    <div className="min-h-[100dvh] bg-[#f4f5fa] text-[#263444]">
       {intentDraft && <LearnerIntentDialog input={intentDraft} initialError={intentError} onCancel={() => setIntentDraft(null)} onConfirm={confirmLearningPlan} />}
-      <header className="sticky top-0 z-30 border-b border-[#e8e4d9] bg-[#f8f6f0]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[#e5e7f0] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8">
           <button onClick={startFresh} className="flex items-center gap-3 text-left" data-testid="button-home">
             <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-[#176e5c] text-white shadow-[0_5px_13px_rgba(23,110,92,.18)]">
@@ -316,60 +316,55 @@ function Home() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] px-5 pb-16 pt-8 sm:px-8 sm:pt-11">
-        <section className="relative mb-8 overflow-hidden rounded-[28px] bg-[#e7eee7] px-6 py-7 sm:px-10 sm:py-9">
-          <div className="pointer-events-none absolute -right-8 -top-24 h-[300px] w-[300px] rounded-full border border-[#bfd2c5]/70 sm:right-[12%]">
-            <div className="absolute inset-8 rounded-full border border-[#bfd2c5]/70" />
-            <div className="absolute inset-16 rounded-full border border-[#bfd2c5]/60" />
-            <span className="absolute right-10 top-12 h-3 w-3 rounded-full bg-[#e88966]" />
-            <span className="absolute bottom-9 left-14 h-2.5 w-2.5 rounded-full bg-[#d9a941]" />
+      <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-6 sm:px-8 sm:pt-10">
+        <section className="relative mb-7 overflow-hidden rounded-[30px] border border-[#284b61] bg-gradient-to-br from-[#15283f] via-[#18545d] to-[#287968] px-6 py-8 shadow-[0_22px_55px_rgba(35,61,84,.18)] sm:mb-9 sm:rounded-[34px] sm:px-10 sm:py-10">
+          <div className="pointer-events-none absolute -right-8 -top-24 h-[300px] w-[300px] rounded-full border border-[#a8dbd1]/25 sm:right-[12%]">
+            <div className="absolute inset-8 rounded-full border border-[#a8dbd1]/25" />
+            <div className="absolute inset-16 rounded-full border border-[#a8dbd1]/20" />
+            <span className="absolute right-10 top-12 h-3 w-3 rounded-full bg-[#ff9878] shadow-[0_0_25px_rgba(255,152,120,.6)]" />
+            <span className="absolute bottom-9 left-14 h-2.5 w-2.5 rounded-full bg-[#ffd477] shadow-[0_0_22px_rgba(255,212,119,.6)]" />
           </div>
           <div className="relative z-10 max-w-[720px] animate-rise">
-            <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.19em] text-[#437769]">
-              <Sparkles size={14} /> Your personal lesson studio
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[.17em] text-[#bde9d9]">
+              <Sparkles size={13} /> Your personal lesson studio
             </div>
-            <h1 className="font-[Manrope] text-[34px] font-extrabold leading-[1.08] tracking-[-.055em] text-[#263c3c] sm:text-[46px]">
-              Big topic. Little steps.<br className="hidden sm:block" /> <span className="text-[#39806e]">A lesson that sticks.</span>
+            <h1 className="font-[Manrope] text-[36px] font-extrabold leading-[1.05] tracking-[-.055em] text-white sm:text-[52px]">
+              Big topic. Little steps.<br className="hidden sm:block" /> <span className="text-[#ffd477]">A lesson that sticks.</span>
             </h1>
-            <p className="mt-3 max-w-[540px] text-[14px] leading-6 text-[#5e7470] sm:text-[15px]">
-              Turn what you’re studying into a clear, captioned explainer you can watch and come back to.
+            <p className="mt-4 max-w-[540px] text-[14px] leading-6 text-white/75 sm:text-[15px]">
+              Clear, animated lessons from topics, notes and exam subjects—made for you.
             </p>
+            <div className="mt-5 flex flex-wrap gap-2" aria-label="Lesson features">
+              {['Animated scenes', 'AI voice', 'Practice questions'].map((item) => (
+                <span key={item} className="rounded-full border border-white/15 bg-white/[.08] px-3 py-1.5 text-[10px] font-semibold tracking-[.02em] text-white/85">{item}</span>
+              ))}
+            </div>
           </div>
-          <div className="absolute bottom-6 right-8 hidden items-end gap-2 opacity-70 sm:flex" aria-hidden="true">
-            <span className="h-11 w-8 rounded-t-[16px] bg-[#d2a740]" />
-            <span className="h-[68px] w-8 rounded-t-[16px] bg-[#76a69a]" />
-            <span className="h-[52px] w-8 rounded-t-[16px] bg-[#e88966]" />
-            <span className="h-[82px] w-8 rounded-t-[16px] bg-[#93b4a5]" />
-            <span className="mb-1 ml-1 text-[10px] font-semibold uppercase tracking-[.13em] text-[#6c8780]">one idea at a time</span>
+          <div className="absolute bottom-7 right-8 hidden items-end gap-2 opacity-90 sm:flex" aria-hidden="true">
+            <span className="h-11 w-8 rounded-t-[16px] bg-[#ffd477] shadow-[0_8px_26px_rgba(255,212,119,.2)]" />
+            <span className="h-[68px] w-8 rounded-t-[16px] bg-[#8de0c4] shadow-[0_8px_26px_rgba(141,224,196,.16)]" />
+            <span className="h-[52px] w-8 rounded-t-[16px] bg-[#ff9878] shadow-[0_8px_26px_rgba(255,152,120,.18)]" />
+            <span className="h-[82px] w-8 rounded-t-[16px] bg-[#8da3ff] shadow-[0_8px_26px_rgba(141,163,255,.2)]" />
+            <span className="mb-1 ml-1 text-[10px] font-semibold uppercase tracking-[.13em] text-[#d6e8e1]">one idea at a time</span>
           </div>
         </section>
-
-        <ExamSyllabusLibrary
-          onLearn={handleSyllabusLearn}
-          busy={generateLesson.isPending}
-          language={language}
-          onLanguageChange={setLanguage}
-          duration={duration}
-          onDurationChange={setDuration}
-          error={syllabusError}
-        />
 
         <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-9">
           <div className="min-w-0">
             {!lesson && !generateLesson.isPending && (
-              <section className="animate-rise rounded-[24px] border border-[#e7e2d7] bg-white p-5 shadow-[0_12px_35px_rgba(53,64,57,.045)] sm:p-8">
+              <section className="animate-rise rounded-[26px] border border-white bg-white p-5 shadow-[0_20px_55px_rgba(47,57,94,.09)] ring-1 ring-[#e8e9f2] sm:p-8" data-testid="panel-start-lesson">
                 <div className="mb-6 flex items-start justify-between gap-4">
                   <div>
-                    <div className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[#438678]">Start with what you have</div>
-                    <h2 className="font-[Manrope] text-[23px] font-extrabold tracking-[-.04em] text-[#273b3d] sm:text-[26px]">What are we learning today?</h2>
-                    <p className="mt-1.5 text-sm text-[#7d8582]">A topic, a question, or the notes you already have.</p>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[.17em] text-[#6263c7]">Make it yours · step 1</div>
+                    <h2 className="font-[Manrope] text-[23px] font-extrabold tracking-[-.045em] text-[#202b46] sm:text-[28px]">What are we learning today?</h2>
+                    <p className="mt-1.5 text-sm leading-6 text-[#69738a]">A topic, a question or the notes that aren’t clicking yet.</p>
                   </div>
-                  <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#f8f0da] text-[#be9133] sm:grid"><Lightbulb size={22} /></span>
+                  <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#fff1d2] to-[#fce0d3] text-[#d08053] shadow-sm sm:grid"><Lightbulb size={22} /></span>
                 </div>
                 <form onSubmit={handleGenerate}>
-                  <div className="mb-3 inline-flex rounded-xl bg-[#f3f4ee] p-1" role="tablist" aria-label="Choose a lesson source">
-                    <button type="button" onClick={() => setSourceType('topic')} role="tab" aria-selected={sourceType === 'topic'} className={`rounded-[9px] px-4 py-2 text-[13px] font-semibold transition ${sourceType === 'topic' ? 'bg-white text-[#176e5c] shadow-sm' : 'text-[#78827e] hover:text-[#354b47]'}`} data-testid="tab-topic">A topic</button>
-                    <button type="button" onClick={() => setSourceType('text')} role="tab" aria-selected={sourceType === 'text'} className={`rounded-[9px] px-4 py-2 text-[13px] font-semibold transition ${sourceType === 'text' ? 'bg-white text-[#176e5c] shadow-sm' : 'text-[#78827e] hover:text-[#354b47]'}`} data-testid="tab-paste-text">Paste study text</button>
+                  <div className="mb-3 inline-flex rounded-xl bg-[#f1f1fa] p-1" role="tablist" aria-label="Choose a lesson source">
+                    <button type="button" onClick={() => setSourceType('topic')} role="tab" aria-selected={sourceType === 'topic'} className={`rounded-[9px] px-4 py-2 text-[13px] font-semibold transition ${sourceType === 'topic' ? 'bg-white text-[#4f52ac] shadow-[0_2px_8px_rgba(50,52,110,.12)]' : 'text-[#778099] hover:text-[#36425e]'}`} data-testid="tab-topic">A topic</button>
+                    <button type="button" onClick={() => setSourceType('text')} role="tab" aria-selected={sourceType === 'text'} className={`rounded-[9px] px-4 py-2 text-[13px] font-semibold transition ${sourceType === 'text' ? 'bg-white text-[#4f52ac] shadow-[0_2px_8px_rgba(50,52,110,.12)]' : 'text-[#778099] hover:text-[#36425e]'}`} data-testid="tab-paste-text">Paste study text</button>
                   </div>
                   <div className="relative">
                     <textarea
@@ -378,7 +373,7 @@ function Home() {
                       placeholder={sourceType === 'topic' ? 'For example: How do volcanoes form?' : 'Paste a passage from your notes or textbook…'}
                       rows={sourceType === 'topic' ? 3 : 6}
                       maxLength={12000}
-                      className="w-full resize-y rounded-2xl border border-[#e6e3d9] bg-[#fcfbf8] px-4 py-4 text-[15px] leading-6 text-[#283e3e] outline-none transition placeholder:text-[#a4aaa4] focus:border-[#6ca293] focus:bg-white focus:ring-4 focus:ring-[#176e5c]/[.07]"
+                      className="w-full resize-y rounded-2xl border border-[#e3e5f0] bg-[#f8f8fc] px-4 py-4 text-[15px] leading-6 text-[#26314e] outline-none transition placeholder:text-[#979db2] focus:border-[#6d70cf] focus:bg-white focus:ring-4 focus:ring-[#686bd1]/[.12]"
                       data-testid="input-lesson-source"
                       aria-label={sourceType === 'topic' ? 'Lesson topic' : 'Study text'}
                     />
@@ -400,7 +395,7 @@ function Home() {
                       type="button"
                       onClick={() => scanInputRef.current?.click()}
                       disabled={isScanning}
-                      className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-xl border border-[#cfe0d4] bg-[#f3f8f3] px-3.5 py-2 text-xs font-bold text-[#317665] transition hover:bg-[#eaf3eb] disabled:cursor-wait disabled:opacity-70"
+                      className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-xl border border-[#edddd0] bg-[#fff8f2] px-3.5 py-2 text-xs font-bold text-[#ab6343] transition hover:border-[#e8c6ae] hover:bg-[#fff1e6] disabled:cursor-wait disabled:opacity-70"
                       data-testid="button-scan-photo"
                     >
                       {isScanning ? <LoaderCircle size={15} className="animate-spin" /> : <Camera size={15} />}
@@ -413,7 +408,7 @@ function Home() {
 
                   <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_1.35fr]">
                     <label className="block">
-                      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">School / study stage</span>
+                      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#6f7891]">School / study stage</span>
                       <span className="relative block">
                         <GraduationCap size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#559183]" />
                         <select value={learnerLevel} onChange={(event) => setLearnerLevel(event.target.value as LearnerLevel)} className="h-12 w-full appearance-none rounded-xl border border-[#e5e3d9] bg-[#fcfbf8] pl-10 pr-10 text-sm font-semibold text-[#394d4b] outline-none transition focus:border-[#6ca293] focus:ring-4 focus:ring-[#176e5c]/[.07]" data-testid="select-learner-level">
@@ -424,7 +419,7 @@ function Home() {
                     </label>
                     <label className="block">
                       <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">Lesson language</span>
-                      <select value={language} onChange={(event) => setLanguage(event.target.value as StudyLanguage)} className="h-12 w-full rounded-xl border border-[#e5e3d9] bg-[#fcfbf8] px-3 text-sm font-semibold text-[#394d4b] outline-none focus:border-[#6ca293] focus:ring-4 focus:ring-[#176e5c]/[.07]" data-testid="select-lesson-language">
+                      <select value={language} onChange={(event) => setLanguage(event.target.value as StudyLanguage)} className="h-12 w-full rounded-xl border border-[#e2e5ef] bg-[#f8f8fc] px-3 text-sm font-semibold text-[#34405c] outline-none focus:border-[#6d70cf] focus:ring-4 focus:ring-[#686bd1]/[.1]" data-testid="select-lesson-language">
                         {LESSON_LANGUAGES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                       </select>
                       <span className="mt-1.5 block text-[11px] leading-4 text-[#77827d]">Lesson text, captions, and AI voice. Your source can be in another language.</span>
@@ -433,7 +428,7 @@ function Home() {
                       <legend className="mb-2 text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">Lesson length</legend>
                       <div className="grid grid-cols-3 gap-2">
                         {durations.map((item) => (
-                          <button key={item.value} type="button" onClick={() => setDuration(item.value)} aria-pressed={duration === item.value} className={`rounded-xl border px-2 py-2.5 text-center transition ${duration === item.value ? 'border-[#78aa9c] bg-[#eff6f0] text-[#176e5c] ring-1 ring-[#78aa9c]/50' : 'border-[#e5e3d9] bg-[#fcfbf8] text-[#737d78] hover:border-[#a8c7bd]'}`} data-testid={`button-duration-${item.value}`}>
+                          <button key={item.value} type="button" onClick={() => setDuration(item.value)} aria-pressed={duration === item.value} className={`rounded-xl border px-2 py-2.5 text-center transition ${duration === item.value ? 'border-[#7476d6] bg-[#f0efff] text-[#4748a7] ring-2 ring-[#7476d6]/20' : 'border-[#e3e5ef] bg-[#f8f8fc] text-[#778099] hover:border-[#b9b9e7] hover:bg-white'}`} data-testid={`button-duration-${item.value}`}>
                             <span className="block text-[12px] font-bold">{item.label}</span>
                             <span className="mt-0.5 block text-[10px]">{item.note}</span>
                           </button>
@@ -443,8 +438,8 @@ function Home() {
                   </div>
 
                   <div className="mt-7 flex flex-col-reverse items-start justify-between gap-4 border-t border-[#efede6] pt-5 sm:flex-row sm:items-center">
-                    <p className="flex items-center gap-2 text-[11px] leading-5 text-[#8b938d]"><LockKeyhole size={13} className="shrink-0 text-[#62998b]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
-                    <button type="submit" disabled={!source.trim() || isScanning} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#176e5c] px-5 py-3.5 text-sm font-bold text-white shadow-[0_7px_15px_rgba(23,110,92,.17)] transition hover:-translate-y-0.5 hover:bg-[#105b4b] hover:shadow-[0_10px_18px_rgba(23,110,92,.2)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
+                    <p className="flex items-center gap-2 text-[11px] leading-5 text-[#78829a]"><LockKeyhole size={13} className="shrink-0 text-[#6969c9]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
+                    <button type="submit" disabled={!source.trim() || isScanning} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#355db8] via-[#5165c9] to-[#735bc2] px-5 py-3.5 text-sm font-bold text-white shadow-[0_9px_22px_rgba(77,87,177,.23)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_27px_rgba(77,87,177,.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#735bc2]/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
                       <Sparkles size={16} /> Personalize my lesson <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
@@ -558,7 +553,7 @@ function Home() {
           </div>
 
           <aside className="animate-rise lg:sticky lg:top-[96px]" style={{ animationDelay: '80ms' }}>
-            <div className="rounded-[22px] border border-[#e7e2d7] bg-white p-5 shadow-[0_12px_35px_rgba(53,64,57,.04)]">
+            <div className="rounded-[24px] border border-white bg-white p-5 shadow-[0_18px_42px_rgba(47,57,94,.07)] ring-1 ring-[#e9eaf2]">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[.16em] text-[#8b938d]">Your little library</div>
@@ -605,6 +600,23 @@ function Home() {
             </div>
           </aside>
         </div>
+
+        <section className="mt-12 border-t border-[#e3e5ef] pt-9 sm:mt-16 sm:pt-11" aria-labelledby="exam-library-heading">
+          <div className="mb-5">
+            <p className="text-[10px] font-bold uppercase tracking-[.17em] text-[#6567bf]">Choose a guided path</p>
+            <h2 id="exam-library-heading" className="mt-1 font-[Manrope] text-[23px] font-extrabold tracking-[-.045em] text-[#202b46] sm:text-[28px]">Explore an exam syllabus</h2>
+            <p className="mt-1.5 text-sm leading-6 text-[#69738a]">Start with a curated topic from your exam preparation.</p>
+          </div>
+          <ExamSyllabusLibrary
+            onLearn={handleSyllabusLearn}
+            busy={generateLesson.isPending}
+            language={language}
+            onLanguageChange={setLanguage}
+            duration={duration}
+            onDurationChange={setDuration}
+            error={syllabusError}
+          />
+        </section>
       </main>
 
       {notice && (
