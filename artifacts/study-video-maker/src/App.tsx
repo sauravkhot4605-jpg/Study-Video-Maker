@@ -63,7 +63,7 @@ const levels: { value: LearnerLevel; label: string }[] = [
 ];
 
 const durations: { value: Duration; label: string; note: string }[] = [
-  { value: 'short', label: 'Quick', note: '3–4 min' },
+  { value: 'short', label: 'Quick', note: 'Fastest · 3–4 min' },
   { value: 'standard', label: 'Balanced', note: '6–8 min' },
   { value: 'detailed', label: 'In depth', note: '10–12 min' },
 ];
@@ -132,7 +132,7 @@ function Home() {
   const [sourceType, setSourceType] = useState<SourceType>('topic');
   const [source, setSource] = useState('');
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>('middle');
-  const [duration, setDuration] = useState<Duration>('standard');
+  const [duration, setDuration] = useState<Duration>('short');
   const [language, setLanguage] = useState<StudyLanguage>('en');
   const [intentDraft, setIntentDraft] = useState<StudyLessonInput | null>(null);
   const [intentError, setIntentError] = useState('');

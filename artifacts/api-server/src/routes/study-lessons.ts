@@ -31,7 +31,7 @@ router.post("/study-lessons/plan", async (req, res): Promise<void> => {
   try {
     const { confirmedPlan: _unused, ...input } = parsed.data;
     const completion = await openai.chat.completions.create({
-      model: "gpt-5.6-terra",
+      model: "gpt-5-nano",
       max_completion_tokens: 4096,
       response_format: {
         type: "json_schema",
@@ -152,7 +152,7 @@ router.post("/study-lessons/generate", async (req, res): Promise<void> => {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const completion = await openai.chat.completions.create({
         model: "gpt-5.6-terra",
-        max_completion_tokens: duration === "detailed" ? 32768 : 16384,
+        max_completion_tokens: { short: 12288, standard: 16384, detailed: 32768 }[duration],
         response_format: {
           type: "json_schema",
           json_schema: { name: "study_lesson", strict: true, schema: lessonOutputSchema },
