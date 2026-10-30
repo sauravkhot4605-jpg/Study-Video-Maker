@@ -22,6 +22,7 @@ import type {
 import type {
   ErrorResponse,
   HealthStatus,
+  StudyLearningPlan,
   StudyLesson,
   StudyLessonInput,
   StudyLessonNarration,
@@ -134,6 +135,94 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getPlanStudyLessonUrl = () => {
+
+
+
+
+  return `/api/study-lessons/plan`
+}
+
+/**
+ * @summary Clarify a learner's intent and propose a lesson before generation
+ */
+export const planStudyLesson = async (studyLessonInput: StudyLessonInput, options?: Parameters<typeof customFetch>[1]): Promise<StudyLearningPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudyLearningPlan>(getPlanStudyLessonUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studyLessonInput)
+  }
+);}
+
+
+
+
+
+export const getPlanStudyLessonMutationKey = () => ['planStudyLesson'] as const;
+
+export const getPlanStudyLessonMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof planStudyLesson>>, TError,PlanStudyLessonMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof planStudyLesson>>, TError,PlanStudyLessonMutationVariables, TContext> => {
+
+const mutationKey = getPlanStudyLessonMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof planStudyLesson>>, PlanStudyLessonMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  planStudyLesson(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlanStudyLessonMutationResult = NonNullable<Awaited<ReturnType<typeof planStudyLesson>>>
+    export type PlanStudyLessonMutationBody = BodyType<StudyLessonInput>
+    export type PlanStudyLessonMutationError = ErrorType<ErrorResponse>
+    export type PlanStudyLessonMutationVariables = {data: BodyType<StudyLessonInput>}
+
+    /**
+ * @summary Clarify a learner's intent and propose a lesson before generation
+ */
+export const usePlanStudyLesson = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof planStudyLesson>>, TError,PlanStudyLessonMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof planStudyLesson>>,
+        TError,
+        PlanStudyLessonMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPlanStudyLessonMutationOptions(options));
+    }
 
 export const getGenerateStudyLessonUrl = () => {
 

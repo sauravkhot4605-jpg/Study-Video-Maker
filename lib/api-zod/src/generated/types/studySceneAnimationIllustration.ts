@@ -17,5 +17,6 @@ export const StudySceneAnimationIllustration = {
   'water-cycle': 'water-cycle',
   'plant-growth': 'plant-growth',
   fraction: 'fraction',
+  percentage: 'percentage',
   'reaction-water': 'reaction-water',
 } as const;

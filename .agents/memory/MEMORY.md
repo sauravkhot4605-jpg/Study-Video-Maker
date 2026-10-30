@@ -1,3 +1,6 @@
 - [Lesson animation safety](lesson-animation.md) — AI plans use constrained diagram data, not executable drawing code.
 - [Animation clock boundaries](animation-clock.md) — frame timestamps may predate initialization; clamp elapsed time before indexing captions.
 - [Dependency remediation](dependency-remediation.md) — parent upgrades can retain vulnerable transitives; verify resolved versions and preserve release-age protections.
+- [Exam learning scope](exam-learning.md) — explicit topic generation avoids surprise credit use; syllabus coverage must stay scoped to the correct exam.
+- [Teaching depth](lesson-depth.md) — deeper reasoning belongs in narration as well as notes; structural depth checks do not verify facts.
+- [Learner intent](learner-intent.md) — separate study stage from topic knowledge; clarify ambiguity and review the scope before generating a lesson.

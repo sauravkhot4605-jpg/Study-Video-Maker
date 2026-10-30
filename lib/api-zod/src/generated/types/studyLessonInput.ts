@@ -6,11 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudyLanguage } from './studyLanguage';
+import type { StudyLearningPlan } from './studyLearningPlan';
+import type { StudyLearningProfile } from './studyLearningProfile';
 import type { StudyLessonInputDuration } from './studyLessonInputDuration';
 import type { StudyLessonInputLearnerLevel } from './studyLessonInputLearnerLevel';
 import type { StudyLessonInputSourceType } from './studyLessonInputSourceType';
 
 export interface StudyLessonInput {
+  learningProfile?: StudyLearningProfile;
+  /** @maxLength 2000 */
+  clarification?: string;
+  confirmedPlan?: StudyLearningPlan;
   language?: StudyLanguage;
   /**
      * @minLength 3

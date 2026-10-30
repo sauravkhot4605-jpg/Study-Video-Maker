@@ -14,3 +14,9 @@ When AI narration is enabled, use decoded audio duration and the audio clock for
 **Why:** Speech length varies, and a word-count estimate or fixed cap can cut off narration or make the video drift away from the voice.
 
 **How to apply:** Include the audio track in exported recordings, preserve the last spoken word, and report audio-generation failures instead of silently producing a voice-enabled video without speech.
+
+Treat narration-text cue positions as approximate teaching-step timing, not word-level audio alignment.
+
+**Why:** Character positions estimate reading progress but generated speech can pause or vary its pace. Seeking before audio is prepared also starts with an estimated duration.
+
+**How to apply:** Preserve normalized step positions until the actual audio duration is known, and use real audio timestamps if promising exact spoken-word synchronization.

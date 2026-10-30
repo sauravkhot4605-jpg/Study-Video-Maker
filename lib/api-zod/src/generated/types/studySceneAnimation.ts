@@ -6,14 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudyFractionVisual } from './studyFractionVisual';
+import type { StudyPercentageVisual } from './studyPercentageVisual';
 import type { StudySceneAnimationIllustration } from './studySceneAnimationIllustration';
 import type { StudySceneAnimationLayout } from './studySceneAnimationLayout';
 import type { StudySceneAnimationNodesItem } from './studySceneAnimationNodesItem';
+import type { StudyTeachingStep } from './studyTeachingStep';
 
 export interface StudySceneAnimation {
   /** Optional specialized educational illustration; general uses the diagram layout. */
   illustration?: StudySceneAnimationIllustration;
   fraction?: StudyFractionVisual;
+  percentage?: StudyPercentageVisual;
+  /**
+     * @minItems 2
+     * @maxItems 5
+     */
+  teachingSteps?: StudyTeachingStep[];
   layout: StudySceneAnimationLayout;
   /**
      * @minItems 2

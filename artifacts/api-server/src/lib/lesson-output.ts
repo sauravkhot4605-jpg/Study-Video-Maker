@@ -2,7 +2,7 @@ import { GenerateStudyLessonResponse, toJSONSchema } from "@workspace/api-zod";
 
 // Strict structured output keeps enum identifiers intact while prose is translated.
 type Schema = Record<string, unknown>;
-function strictSchema(schema: Schema): Schema {
+export function strictSchema(schema: Schema): Schema {
   const result = { ...schema };
   if (result.properties && typeof result.properties === "object") {
     const required = Array.isArray(result.required) ? result.required : [];
@@ -21,13 +21,13 @@ function strictSchema(schema: Schema): Schema {
   return result;
 }
 
-export const lessonOutputSchema = strictSchema(toJSONSchema(GenerateStudyLessonResponse));
+export const lessonOutputSchema = strictSchema(toJSONSchema(GenerateStudyLessonResponse.omit({ learningPlan: true })));
 
 /** Strict outputs encode optional fields as null; the API contract uses omission. */
 export function normalizeLessonOutput(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeLessonOutput);
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(Object.entries(value).filter(([key, child]) =>
-    child !== null || !["animation", "illustration", "fraction", "language"].includes(key),
+    child !== null || !["animation", "illustration", "fraction", "percentage", "teachingSteps", "learningGuide", "learningPlan", "language"].includes(key),
   ).map(([key, child]) => [key, normalizeLessonOutput(child)]));
 }

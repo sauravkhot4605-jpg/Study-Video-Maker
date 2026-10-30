@@ -3,6 +3,11 @@ import type { StudyLanguage } from '@workspace/api-client-react';
 const localeIndex = { hi: 0, mr: 1, es: 2, fr: 3, de: 4 } as const;
 // Fixed labels belong to the drawing templates; lesson prose comes from the AI.
 const labels: Record<string, [string, string, string, string, string]> = {
+  'The whole': ['पूर्ण मात्रा', 'पूर्ण रक्कम', 'El total', 'Le total', 'Das Ganze'],
+  Rate: ['प्रतिशत दर', 'टक्केवारी', 'Porcentaje', 'Taux', 'Prozentsatz'],
+  Formula: ['सूत्र', 'सूत्र', 'Fórmula', 'Formule', 'Formel'],
+  Answer: ['उत्तर', 'उत्तर', 'Respuesta', 'Réponse', 'Ergebnis'],
+  '100 equal parts': ['100 बराबर भाग', '100 समान भाग', '100 partes iguales', '100 parts égales', '100 gleiche Teile'],
   Evaporation: ['वाष्पीकरण', 'बाष्पीभवन', 'Evaporación', 'Évaporation', 'Verdunstung'],
   Condensation: ['संघनन', 'संघनन', 'Condensación', 'Condensation', 'Kondensation'],
   Precipitation: ['वर्षण', 'पर्जन्य', 'Precipitación', 'Précipitations', 'Niederschlag'],

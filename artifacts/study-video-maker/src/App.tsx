@@ -5,6 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { LessonVideoPlayer } from '@/components/lesson-video-player';
+import { LessonLearningGuide } from '@/components/lesson-learning-guide';
+import { LearnerIntentDialog } from '@/components/learner-intent-dialog';
+import { ExamSyllabusLibrary } from '@/components/exam-syllabus-library';
+import { buildSyllabusLessonSource, type SyllabusSelection } from '@/lib/syllabus/catalog';
 import { useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
 import type { StudyLanguage, StudyLesson, StudyLessonInput } from '@workspace/api-client-react';
 import { LESSON_LANGUAGES, languageLabel } from '@/lib/lesson-languages';
@@ -130,11 +134,16 @@ function Home() {
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>('middle');
   const [duration, setDuration] = useState<Duration>('standard');
   const [language, setLanguage] = useState<StudyLanguage>('en');
+  const [intentDraft, setIntentDraft] = useState<StudyLessonInput | null>(null);
+  const [intentError, setIntentError] = useState('');
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>(readSavedLessons);
   const [lesson, setLesson] = useState<StudyLesson | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [notice, setNotice] = useState('');
+  const [syllabusError, setSyllabusError] = useState('');
+  const generationLock = useRef(false);
+  const scrollToGeneratedLesson = useRef(false);
   const [isScanning, setIsScanning] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const generateLesson = useGenerateStudyLesson();
@@ -197,6 +206,31 @@ function Home() {
     setActiveLessonId(newId);
   };
 
+  const createLesson = async (data: StudyLessonInput) => {
+    if (generationLock.current) return;
+    generationLock.current = true;
+    setNotice('');
+    setSyllabusError('');
+    setLesson(null);
+    setActiveLessonId(null);
+    try {
+      const result = await generateLesson.mutateAsync({ data });
+      scrollToGeneratedLesson.current = true;
+      setLesson(result);
+      setSceneIndex(0);
+      saveLesson(result);
+    } finally {
+      generationLock.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (lesson && scrollToGeneratedLesson.current) {
+      scrollToGeneratedLesson.current = false;
+      document.querySelector('[data-testid="panel-generated-lesson"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [lesson]);
+
   const handleGenerate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (source.trim().length < 3) {
@@ -204,15 +238,30 @@ function Home() {
       return;
     }
     setNotice('');
+    setIntentError('');
+    setIntentDraft({ source: source.trim(), sourceType, learnerLevel, duration, language });
+  };
+
+  const handleSyllabusLearn = async (selection: SyllabusSelection) => {
+    setIntentError('');
+    setIntentDraft({
+        source: buildSyllabusLessonSource(selection),
+        sourceType: 'topic',
+        learnerLevel: 'adult',
+        duration,
+        language,
+    });
+  };
+
+  const confirmLearningPlan = async (data: StudyLessonInput) => {
+    setIntentDraft(null);
+    setIntentError('');
     try {
-      const result = await generateLesson.mutateAsync({
-        data: { source: source.trim(), sourceType, learnerLevel, duration, language },
-      });
-      setLesson(result);
-      setSceneIndex(0);
-      saveLesson(result);
+      await createLesson(data);
     } catch {
-      setNotice('We could not make that lesson just now. Please try again in a moment.');
+      setNotice('We could not create your lesson. Your learning plan is kept here so you can retry.');
+      setIntentError('The lesson could not be created. Your choices and approved plan are kept; you can retry without rebuilding the plan.');
+      setIntentDraft(data);
     }
   };
 
@@ -245,6 +294,7 @@ function Home() {
 
   return (
     <div className="min-h-[100dvh] bg-[#f6f4ed] text-[#263444]">
+      {intentDraft && <LearnerIntentDialog input={intentDraft} initialError={intentError} onCancel={() => setIntentDraft(null)} onConfirm={confirmLearningPlan} />}
       <header className="sticky top-0 z-30 border-b border-[#e8e4d9] bg-[#f8f6f0]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8">
           <button onClick={startFresh} className="flex items-center gap-3 text-left" data-testid="button-home">
@@ -294,7 +344,17 @@ function Home() {
           </div>
         </section>
 
-        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-9">
+        <ExamSyllabusLibrary
+          onLearn={handleSyllabusLearn}
+          busy={generateLesson.isPending}
+          language={language}
+          onLanguageChange={setLanguage}
+          duration={duration}
+          onDurationChange={setDuration}
+          error={syllabusError}
+        />
+
+        <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-9">
           <div className="min-w-0">
             {!lesson && !generateLesson.isPending && (
               <section className="animate-rise rounded-[24px] border border-[#e7e2d7] bg-white p-5 shadow-[0_12px_35px_rgba(53,64,57,.045)] sm:p-8">
@@ -353,7 +413,7 @@ function Home() {
 
                   <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_1.35fr]">
                     <label className="block">
-                      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">Explain it for</span>
+                      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[.13em] text-[#77827d]">School / study stage</span>
                       <span className="relative block">
                         <GraduationCap size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#559183]" />
                         <select value={learnerLevel} onChange={(event) => setLearnerLevel(event.target.value as LearnerLevel)} className="h-12 w-full appearance-none rounded-xl border border-[#e5e3d9] bg-[#fcfbf8] pl-10 pr-10 text-sm font-semibold text-[#394d4b] outline-none transition focus:border-[#6ca293] focus:ring-4 focus:ring-[#176e5c]/[.07]" data-testid="select-learner-level">
@@ -385,7 +445,7 @@ function Home() {
                   <div className="mt-7 flex flex-col-reverse items-start justify-between gap-4 border-t border-[#efede6] pt-5 sm:flex-row sm:items-center">
                     <p className="flex items-center gap-2 text-[11px] leading-5 text-[#8b938d]"><LockKeyhole size={13} className="shrink-0 text-[#62998b]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
                     <button type="submit" disabled={!source.trim() || isScanning} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#176e5c] px-5 py-3.5 text-sm font-bold text-white shadow-[0_7px_15px_rgba(23,110,92,.17)] transition hover:-translate-y-0.5 hover:bg-[#105b4b] hover:shadow-[0_10px_18px_rgba(23,110,92,.2)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
-                      <Sparkles size={16} /> Create lesson video <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                      <Sparkles size={16} /> Personalize my lesson <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
                 </form>
@@ -427,6 +487,16 @@ function Home() {
                       <span className="flex items-center gap-1.5 rounded-full bg-[#f5f2e8] px-3 py-1.5 text-[11px] font-semibold text-[#81754e]"><Clock3 size={13} /> About {lesson.estimatedMinutes} min</span>
                     </div>
 
+                    {lesson.learningPlan && (
+                      <details className="mb-4 rounded-xl border border-[#dce7dc] bg-[#f3f7f0] p-4 text-[13px] leading-6 text-[#52695d]" data-testid="panel-confirmed-learning-plan">
+                        <summary className="cursor-pointer font-bold text-[#176e5c]">Your agreed learning plan</summary>
+                        <h3 className="mt-3 font-bold">{lesson.learningPlan.topic}</h3>
+                        <p className="mt-2">{lesson.learningPlan.startingPoint}</p>
+                        <p className="mt-2">{lesson.learningPlan.teachingApproach}</p>
+                        <ul className="mt-2 list-disc pl-5">{lesson.learningPlan.objectives.map((objective, i) => <li key={i}>{objective}</li>)}</ul>
+                        <p className="mt-2 border-t border-[#dce7dc] pt-2">{lesson.learningPlan.scopeBoundary}</p>
+                      </details>
+                    )}
                     <LessonVideoPlayer
                       key={activeLessonId || lesson.title}
                       lesson={lesson}
@@ -456,6 +526,7 @@ function Home() {
                       </div>
                       <p key={`narration-${sceneIndex}`} className="animate-rise text-[13px] leading-[1.8] text-[#65716c]" data-testid="text-scene-narration">{currentScene.narration}</p>
                     </div>
+                    {lesson.learningGuide && <LessonLearningGuide key={activeLessonId || lesson.title} guide={lesson.learningGuide} />}
                   </div>
 
                   <aside className="border-t border-[#efede6] bg-[#faf9f5] p-5 lg:border-l lg:border-t-0 sm:p-6">

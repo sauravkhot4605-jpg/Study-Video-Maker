@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudyLanguage } from './studyLanguage';
+import type { StudyLearningGuide } from './studyLearningGuide';
+import type { StudyLearningPlan } from './studyLearningPlan';
 import type { StudyLessonScene } from './studyLessonScene';
 
 export interface StudyLesson {
+  learningPlan?: StudyLearningPlan;
+  learningGuide?: StudyLearningGuide;
   language?: StudyLanguage;
   title: string;
   overview: string;

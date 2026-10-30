@@ -41,6 +41,76 @@ export const StudyLessonInputDuration = {
   detailed: 'detailed',
 } as const;
 
+export type StudyLearningProfileGoal = typeof StudyLearningProfileGoal[keyof typeof StudyLearningProfileGoal];
+
+
+export const StudyLearningProfileGoal = {
+  foundations: 'foundations',
+  clarify: 'clarify',
+  exam: 'exam',
+  application: 'application',
+} as const;
+
+export type StudyLearningProfileKnowledge = typeof StudyLearningProfileKnowledge[keyof typeof StudyLearningProfileKnowledge];
+
+
+export const StudyLearningProfileKnowledge = {
+  new: 'new',
+  some: 'some',
+  confident: 'confident',
+} as const;
+
+export interface StudyLearningProfile {
+  goal: StudyLearningProfileGoal;
+  knowledge: StudyLearningProfileKnowledge;
+  /** @maxLength 1500 */
+  focus?: string;
+  /** @maxLength 1500 */
+  known?: string;
+}
+
+export interface StudyLearningPlan {
+  /**
+     * @minItems 1
+     * @maxItems 4
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  interpretations: string[];
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  topic: string;
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  startingPoint: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  teachingApproach: string;
+  /**
+     * @maxItems 5
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  objectives: string[];
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  scopeBoundary: string;
+  needsClarification: boolean;
+  /**
+     * @maxLength 700
+     * @nullable
+     */
+  clarifyingQuestion: string | null;
+}
+
 export type StudyLanguage = typeof StudyLanguage[keyof typeof StudyLanguage];
 
 
@@ -54,6 +124,10 @@ export const StudyLanguage = {
 } as const;
 
 export interface StudyLessonInput {
+  learningProfile?: StudyLearningProfile;
+  /** @maxLength 2000 */
+  clarification?: string;
+  confirmedPlan?: StudyLearningPlan;
   language?: StudyLanguage;
   /**
      * @minLength 3
@@ -100,6 +174,7 @@ export const StudySceneAnimationIllustration = {
   'water-cycle': 'water-cycle',
   'plant-growth': 'plant-growth',
   fraction: 'fraction',
+  percentage: 'percentage',
   'reaction-water': 'reaction-water',
 } as const;
 
@@ -114,6 +189,42 @@ export interface StudyFractionVisual {
      * @maximum 12
      */
   denominator: number;
+}
+
+export interface StudyPercentageVisual {
+  /**
+     * @minimum 0.01
+     * @maximum 1000000000
+     */
+  base: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  rate: number;
+}
+
+export interface StudyTeachingStep {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  detail: string;
+  /**
+     * @minimum 0
+     * @maximum 4
+     */
+  nodeIndex: number;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  narrationCue: string;
 }
 
 export type StudySceneAnimationLayout = typeof StudySceneAnimationLayout[keyof typeof StudySceneAnimationLayout];
@@ -157,6 +268,12 @@ export interface StudySceneAnimation {
   /** Optional specialized educational illustration; general uses the diagram layout. */
   illustration?: StudySceneAnimationIllustration;
   fraction?: StudyFractionVisual;
+  percentage?: StudyPercentageVisual;
+  /**
+     * @minItems 2
+     * @maxItems 5
+     */
+  teachingSteps?: StudyTeachingStep[];
   layout: StudySceneAnimationLayout;
   /**
      * @minItems 2
@@ -178,7 +295,110 @@ export interface StudyLessonScene {
   keyTermDefinition: string | null;
 }
 
+export interface StudyWorkedStep {
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  action: string;
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  reason: string;
+}
+
+export interface StudyWorkedExample {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  question: string;
+  /**
+     * @minItems 2
+     * @maxItems 6
+     */
+  steps: StudyWorkedStep[];
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  answer: string;
+}
+
+export interface StudyMisconception {
+  /**
+     * @minLength 1
+     * @maxLength 600
+     */
+  mistake: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  correction: string;
+}
+
+export interface StudyPracticeQuestion {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  question: string;
+  /**
+     * @minLength 1
+     * @maxLength 600
+     */
+  hint: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  answer: string;
+  /**
+     * @minLength 1
+     * @maxLength 1400
+     */
+  explanation: string;
+}
+
+export interface StudyLearningGuide {
+  /**
+     * @minItems 2
+     * @maxItems 5
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  learningObjectives: string[];
+  /**
+     * @maxItems 5
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  prerequisites: string[];
+  /**
+     * @minItems 2
+     * @maxItems 4
+     * @items.minLength 1
+     * @items.maxLength 800
+     */
+  whyItWorks: string[];
+  workedExample: StudyWorkedExample;
+  /**
+     * @minItems 1
+     * @maxItems 3
+     */
+  misconceptions: StudyMisconception[];
+  /**
+     * @minItems 2
+     * @maxItems 4
+     */
+  practiceQuestions: StudyPracticeQuestion[];
+}
+
 export interface StudyLesson {
+  learningPlan?: StudyLearningPlan;
+  learningGuide?: StudyLearningGuide;
   language?: StudyLanguage;
   title: string;
   overview: string;

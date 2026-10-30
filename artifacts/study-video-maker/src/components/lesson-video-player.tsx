@@ -5,6 +5,8 @@ import { HEIGHT, WIDTH, drawFrame, sceneDuration, scenePlan } from '@/components
 import { VISUAL_LABELS, resolveVisual } from '@/components/lesson-canvas/illustration';
 import { LessonNarration } from '@/components/lesson-narration';
 import { languageLabel, loadLessonFont } from '@/lib/lesson-languages';
+import { teachingState } from '@/components/lesson-canvas/teaching';
+import { TeachingStepControls } from '@/components/teaching-step-controls';
 
 type Props = {
   lesson: StudyLesson;
@@ -30,6 +32,9 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [preparingVoice, setPreparingVoice] = useState(false);
   const [voiceProgress, setVoiceProgress] = useState('');
+  const [teachingIndex, setTeachingIndex] = useState(0);
+  const teachingIndexRef = useRef(0);
+  const seekProgressRef = useRef<number | null>(null);
   const narrationRef = useRef<LessonNarration | null>(null);
   const voiceEnabledRef = useRef(true);
   const operationRef = useRef<symbol | null>(null);
@@ -54,6 +59,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     if (sceneIndex !== shownIndexRef.current) {
       shownIndexRef.current = sceneIndex;
       sceneTimeRef.current = 0;
+      seekProgressRef.current = null;
       if (voiceEnabledRef.current) {
         narrationRef.current?.pause();
         if (playingRef.current && narrationRef.current?.duration(sceneIndex)) {
@@ -107,6 +113,13 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
           const pct = Math.min(99, Math.floor(((before + sceneTimeRef.current) / total) * 100));
           if (pct !== lastProgress) { lastProgress = pct; setProgress(pct); }
         }
+      }
+      const activeScene = scenes[shownIndexRef.current] || scenes[0];
+      const activeDuration = (voiceEnabledRef.current ? narrationRef.current?.duration(shownIndexRef.current) : undefined) ?? sceneDuration(activeScene);
+      const activeStep = teachingState(activeScene, sceneTimeRef.current, activeDuration).index;
+      if (activeStep !== teachingIndexRef.current) {
+        teachingIndexRef.current = activeStep;
+        setTeachingIndex(activeStep);
       }
       drawFrame(context, {
         lesson, sceneIndex: shownIndexRef.current, sceneTime: sceneTimeRef.current,
@@ -179,7 +192,10 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
       const duration = (voiceEnabledRef.current ? narrationRef.current?.duration(index) : undefined) ?? sceneDuration(lesson.scenes[index]);
       if (sceneTimeRef.current >= duration) sceneTimeRef.current = 0;
       // The initially displayed still is not a spoken offset.
-      if (voiceEnabledRef.current && !narrationRef.current?.time) sceneTimeRef.current = 0;
+      if (seekProgressRef.current !== null) {
+        sceneTimeRef.current = seekProgressRef.current * duration;
+        seekProgressRef.current = null;
+      } else if (voiceEnabledRef.current && !narrationRef.current?.time) sceneTimeRef.current = 0;
       if (voiceEnabledRef.current) narrationRef.current?.play(index, sceneTimeRef.current);
       setPreviewPlaying(true);
     } catch (cause) {
@@ -193,6 +209,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
 
   const restartScene = () => {
     narrationRef.current?.pause();
+    seekProgressRef.current = null;
     sceneTimeRef.current = 0;
     setPreviewPlaying(false);
     playingRef.current = false;
@@ -205,6 +222,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     try {
       await prepareNarration();
       if (!mountedRef.current || operationRef.current !== operation) return;
+      playbackRef.current?.pause();
       if (voiceEnabledRef.current) narrationRef.current?.play(shownIndexRef.current);
       setPreviewPlaying(true);
     } catch (cause) {
@@ -223,6 +241,25 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     recordingRef.current = false;
     if (recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
     else setPhase('idle');
+  };
+
+  const seekToTeachingStep = (index: number) => {
+    if (operationRef.current || recordingRef.current || preparingVoice) return;
+    const scene = lesson.scenes[shownIndexRef.current];
+    const duration = (voiceEnabledRef.current ? narrationRef.current?.duration(shownIndexRef.current) : undefined) ?? sceneDuration(scene);
+    const state = teachingState(scene, 0, duration);
+    if (index < 0 || index >= state.steps.length) return;
+    narrationRef.current?.pause();
+    playbackRef.current?.pause();
+    setPreviewPlaying(false);
+    playingRef.current = false;
+    const start = state.starts[index];
+    const next = state.starts[index + 1] ?? 1;
+    const position = start + Math.min(0.7 / duration, (next - start) * 0.1);
+    seekProgressRef.current = position;
+    sceneTimeRef.current = position * duration;
+    teachingIndexRef.current = index;
+    setTeachingIndex(index);
   };
 
   const makeVideo = async () => {
@@ -292,6 +329,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
       // Drive the export timeline internally from scene 1.
       shownIndexRef.current = 0;
       sceneTimeRef.current = 0;
+      seekProgressRef.current = null;
       onSceneChangeRef.current(0);
       recordingRef.current = true;
       recorder.start(250);
@@ -355,6 +393,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
               setPreviewPlaying(false);
               playingRef.current = false;
               sceneTimeRef.current = 0.7;
+               seekProgressRef.current = null;
               setVoiceEnabled(event.target.checked);
               setError('');
             }}
@@ -376,6 +415,12 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
           </div>
         )}
       </div>
+      {currentScene && <TeachingStepControls
+        steps={teachingState(currentScene, 0, 1).steps}
+        index={Math.min(teachingIndex, teachingState(currentScene, 0, 1).steps.length - 1)}
+        disabled={recording || preparingVoice}
+        onSeek={seekToTeachingStep}
+      />}
       <div className="flex items-center gap-2 border-t border-white/10 bg-[#1b4441] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#c3d9ca]" data-testid="status-visual-mode">
         <span className="h-1.5 w-1.5 rounded-full bg-[#e7c568]" />
         Visual mode: {VISUAL_LABELS[visual.kind]}

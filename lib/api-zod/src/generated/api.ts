@@ -18,14 +18,144 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Clarify a learner's intent and propose a lesson before generation
+ */
+export const planStudyLessonBodyLearningProfileFocusMax = 1500;
+
+export const planStudyLessonBodyLearningProfileKnownMax = 1500;
+
+export const planStudyLessonBodyClarificationMax = 2000;
+
+export const planStudyLessonBodyConfirmedPlanInterpretationsItemMax = 240;
+
+export const planStudyLessonBodyConfirmedPlanInterpretationsMax = 4;
+
+export const planStudyLessonBodyConfirmedPlanTopicMax = 240;
+
+export const planStudyLessonBodyConfirmedPlanStartingPointMax = 800;
+
+export const planStudyLessonBodyConfirmedPlanTeachingApproachMax = 1000;
+
+export const planStudyLessonBodyConfirmedPlanObjectivesItemMax = 300;
+
+export const planStudyLessonBodyConfirmedPlanObjectivesMax = 5;
+
+export const planStudyLessonBodyConfirmedPlanScopeBoundaryMax = 800;
+
+export const planStudyLessonBodyConfirmedPlanClarifyingQuestionMax = 700;
+
+export const planStudyLessonBodySourceMin = 3;
+export const planStudyLessonBodySourceMax = 12000;
+
+
+
+export const PlanStudyLessonBody = zod.object({
+  "learningProfile": zod.object({
+  "goal": zod.enum(['foundations', 'clarify', 'exam', 'application']),
+  "knowledge": zod.enum(['new', 'some', 'confident']),
+  "focus": zod.string().max(planStudyLessonBodyLearningProfileFocusMax).optional(),
+  "known": zod.string().max(planStudyLessonBodyLearningProfileKnownMax).optional()
+}).optional(),
+  "clarification": zod.string().max(planStudyLessonBodyClarificationMax).optional(),
+  "confirmedPlan": zod.object({
+  "interpretations": zod.array(zod.string().min(1).max(planStudyLessonBodyConfirmedPlanInterpretationsItemMax)).min(1).max(planStudyLessonBodyConfirmedPlanInterpretationsMax),
+  "topic": zod.string().min(1).max(planStudyLessonBodyConfirmedPlanTopicMax),
+  "startingPoint": zod.string().min(1).max(planStudyLessonBodyConfirmedPlanStartingPointMax),
+  "teachingApproach": zod.string().min(1).max(planStudyLessonBodyConfirmedPlanTeachingApproachMax),
+  "objectives": zod.array(zod.string().min(1).max(planStudyLessonBodyConfirmedPlanObjectivesItemMax)).max(planStudyLessonBodyConfirmedPlanObjectivesMax),
+  "scopeBoundary": zod.string().min(1).max(planStudyLessonBodyConfirmedPlanScopeBoundaryMax),
+  "needsClarification": zod.boolean(),
+  "clarifyingQuestion": zod.string().max(planStudyLessonBodyConfirmedPlanClarifyingQuestionMax).nullable()
+}).optional(),
+  "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
+  "source": zod.string().min(planStudyLessonBodySourceMin).max(planStudyLessonBodySourceMax),
+  "sourceType": zod.enum(['topic', 'text']),
+  "learnerLevel": zod.enum(['primary', 'middle', 'high', 'college', 'adult']),
+  "duration": zod.enum(['short', 'standard', 'detailed'])
+})
+
+export const planStudyLessonResponseInterpretationsItemMax = 240;
+
+export const planStudyLessonResponseInterpretationsMax = 4;
+
+export const planStudyLessonResponseTopicMax = 240;
+
+export const planStudyLessonResponseStartingPointMax = 800;
+
+export const planStudyLessonResponseTeachingApproachMax = 1000;
+
+export const planStudyLessonResponseObjectivesItemMax = 300;
+
+export const planStudyLessonResponseObjectivesMax = 5;
+
+export const planStudyLessonResponseScopeBoundaryMax = 800;
+
+export const planStudyLessonResponseClarifyingQuestionMax = 700;
+
+
+
+export const PlanStudyLessonResponse = zod.object({
+  "interpretations": zod.array(zod.string().min(1).max(planStudyLessonResponseInterpretationsItemMax)).min(1).max(planStudyLessonResponseInterpretationsMax),
+  "topic": zod.string().min(1).max(planStudyLessonResponseTopicMax),
+  "startingPoint": zod.string().min(1).max(planStudyLessonResponseStartingPointMax),
+  "teachingApproach": zod.string().min(1).max(planStudyLessonResponseTeachingApproachMax),
+  "objectives": zod.array(zod.string().min(1).max(planStudyLessonResponseObjectivesItemMax)).max(planStudyLessonResponseObjectivesMax),
+  "scopeBoundary": zod.string().min(1).max(planStudyLessonResponseScopeBoundaryMax),
+  "needsClarification": zod.boolean(),
+  "clarifyingQuestion": zod.string().max(planStudyLessonResponseClarifyingQuestionMax).nullable()
+})
+
+
+/**
  * @summary Generate a study lesson
  */
+export const generateStudyLessonBodyLearningProfileFocusMax = 1500;
+
+export const generateStudyLessonBodyLearningProfileKnownMax = 1500;
+
+export const generateStudyLessonBodyClarificationMax = 2000;
+
+export const generateStudyLessonBodyConfirmedPlanInterpretationsItemMax = 240;
+
+export const generateStudyLessonBodyConfirmedPlanInterpretationsMax = 4;
+
+export const generateStudyLessonBodyConfirmedPlanTopicMax = 240;
+
+export const generateStudyLessonBodyConfirmedPlanStartingPointMax = 800;
+
+export const generateStudyLessonBodyConfirmedPlanTeachingApproachMax = 1000;
+
+export const generateStudyLessonBodyConfirmedPlanObjectivesItemMax = 300;
+
+export const generateStudyLessonBodyConfirmedPlanObjectivesMax = 5;
+
+export const generateStudyLessonBodyConfirmedPlanScopeBoundaryMax = 800;
+
+export const generateStudyLessonBodyConfirmedPlanClarifyingQuestionMax = 700;
+
 export const generateStudyLessonBodySourceMin = 3;
 export const generateStudyLessonBodySourceMax = 12000;
 
 
 
 export const GenerateStudyLessonBody = zod.object({
+  "learningProfile": zod.object({
+  "goal": zod.enum(['foundations', 'clarify', 'exam', 'application']),
+  "knowledge": zod.enum(['new', 'some', 'confident']),
+  "focus": zod.string().max(generateStudyLessonBodyLearningProfileFocusMax).optional(),
+  "known": zod.string().max(generateStudyLessonBodyLearningProfileKnownMax).optional()
+}).optional(),
+  "clarification": zod.string().max(generateStudyLessonBodyClarificationMax).optional(),
+  "confirmedPlan": zod.object({
+  "interpretations": zod.array(zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanInterpretationsItemMax)).min(1).max(generateStudyLessonBodyConfirmedPlanInterpretationsMax),
+  "topic": zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanTopicMax),
+  "startingPoint": zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanStartingPointMax),
+  "teachingApproach": zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanTeachingApproachMax),
+  "objectives": zod.array(zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanObjectivesItemMax)).max(generateStudyLessonBodyConfirmedPlanObjectivesMax),
+  "scopeBoundary": zod.string().min(1).max(generateStudyLessonBodyConfirmedPlanScopeBoundaryMax),
+  "needsClarification": zod.boolean(),
+  "clarifyingQuestion": zod.string().max(generateStudyLessonBodyConfirmedPlanClarifyingQuestionMax).nullable()
+}).optional(),
   "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
   "source": zod.string().min(generateStudyLessonBodySourceMin).max(generateStudyLessonBodySourceMax),
   "sourceType": zod.enum(['topic', 'text']),
@@ -33,10 +163,88 @@ export const GenerateStudyLessonBody = zod.object({
   "duration": zod.enum(['short', 'standard', 'detailed'])
 })
 
+export const generateStudyLessonResponseLearningPlanInterpretationsItemMax = 240;
+
+export const generateStudyLessonResponseLearningPlanInterpretationsMax = 4;
+
+export const generateStudyLessonResponseLearningPlanTopicMax = 240;
+
+export const generateStudyLessonResponseLearningPlanStartingPointMax = 800;
+
+export const generateStudyLessonResponseLearningPlanTeachingApproachMax = 1000;
+
+export const generateStudyLessonResponseLearningPlanObjectivesItemMax = 300;
+
+export const generateStudyLessonResponseLearningPlanObjectivesMax = 5;
+
+export const generateStudyLessonResponseLearningPlanScopeBoundaryMax = 800;
+
+export const generateStudyLessonResponseLearningPlanClarifyingQuestionMax = 700;
+
+export const generateStudyLessonResponseLearningGuideLearningObjectivesItemMax = 240;
+
+export const generateStudyLessonResponseLearningGuideLearningObjectivesMin = 2;
+export const generateStudyLessonResponseLearningGuideLearningObjectivesMax = 5;
+
+export const generateStudyLessonResponseLearningGuidePrerequisitesItemMax = 240;
+
+export const generateStudyLessonResponseLearningGuidePrerequisitesMax = 5;
+
+export const generateStudyLessonResponseLearningGuideWhyItWorksItemMax = 800;
+
+export const generateStudyLessonResponseLearningGuideWhyItWorksMin = 2;
+export const generateStudyLessonResponseLearningGuideWhyItWorksMax = 4;
+
+export const generateStudyLessonResponseLearningGuideWorkedExampleQuestionMax = 1000;
+
+export const generateStudyLessonResponseLearningGuideWorkedExampleStepsItemActionMax = 800;
+
+export const generateStudyLessonResponseLearningGuideWorkedExampleStepsItemReasonMax = 800;
+
+export const generateStudyLessonResponseLearningGuideWorkedExampleStepsMin = 2;
+export const generateStudyLessonResponseLearningGuideWorkedExampleStepsMax = 6;
+
+export const generateStudyLessonResponseLearningGuideWorkedExampleAnswerMax = 1000;
+
+export const generateStudyLessonResponseLearningGuideMisconceptionsItemMistakeMax = 600;
+
+export const generateStudyLessonResponseLearningGuideMisconceptionsItemCorrectionMax = 1000;
+
+export const generateStudyLessonResponseLearningGuideMisconceptionsMax = 3;
+
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsItemQuestionMax = 1000;
+
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsItemHintMax = 600;
+
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsItemAnswerMax = 1000;
+
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsItemExplanationMax = 1400;
+
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsMin = 2;
+export const generateStudyLessonResponseLearningGuidePracticeQuestionsMax = 4;
+
 export const generateStudyLessonResponseScenesItemAnimationFractionNumeratorMin = 0;
 export const generateStudyLessonResponseScenesItemAnimationFractionNumeratorMax = 12;
 
 export const generateStudyLessonResponseScenesItemAnimationFractionDenominatorMax = 12;
+
+export const generateStudyLessonResponseScenesItemAnimationPercentageBaseMin = 0.01;
+export const generateStudyLessonResponseScenesItemAnimationPercentageBaseMax = 1000000000;
+
+export const generateStudyLessonResponseScenesItemAnimationPercentageRateMin = 0;
+export const generateStudyLessonResponseScenesItemAnimationPercentageRateMax = 100;
+
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsItemTitleMax = 80;
+
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsItemDetailMax = 240;
+
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNodeIndexMin = 0;
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNodeIndexMax = 4;
+
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNarrationCueMax = 160;
+
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsMin = 2;
+export const generateStudyLessonResponseScenesItemAnimationTeachingStepsMax = 5;
 
 export const generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax = 48;
 
@@ -51,6 +259,39 @@ export const generateStudyLessonResponseScenesMax = 8;
 
 
 export const GenerateStudyLessonResponse = zod.object({
+  "learningPlan": zod.object({
+  "interpretations": zod.array(zod.string().min(1).max(generateStudyLessonResponseLearningPlanInterpretationsItemMax)).min(1).max(generateStudyLessonResponseLearningPlanInterpretationsMax),
+  "topic": zod.string().min(1).max(generateStudyLessonResponseLearningPlanTopicMax),
+  "startingPoint": zod.string().min(1).max(generateStudyLessonResponseLearningPlanStartingPointMax),
+  "teachingApproach": zod.string().min(1).max(generateStudyLessonResponseLearningPlanTeachingApproachMax),
+  "objectives": zod.array(zod.string().min(1).max(generateStudyLessonResponseLearningPlanObjectivesItemMax)).max(generateStudyLessonResponseLearningPlanObjectivesMax),
+  "scopeBoundary": zod.string().min(1).max(generateStudyLessonResponseLearningPlanScopeBoundaryMax),
+  "needsClarification": zod.boolean(),
+  "clarifyingQuestion": zod.string().max(generateStudyLessonResponseLearningPlanClarifyingQuestionMax).nullable()
+}).optional(),
+  "learningGuide": zod.object({
+  "learningObjectives": zod.array(zod.string().min(1).max(generateStudyLessonResponseLearningGuideLearningObjectivesItemMax)).min(generateStudyLessonResponseLearningGuideLearningObjectivesMin).max(generateStudyLessonResponseLearningGuideLearningObjectivesMax),
+  "prerequisites": zod.array(zod.string().min(1).max(generateStudyLessonResponseLearningGuidePrerequisitesItemMax)).max(generateStudyLessonResponseLearningGuidePrerequisitesMax),
+  "whyItWorks": zod.array(zod.string().min(1).max(generateStudyLessonResponseLearningGuideWhyItWorksItemMax)).min(generateStudyLessonResponseLearningGuideWhyItWorksMin).max(generateStudyLessonResponseLearningGuideWhyItWorksMax),
+  "workedExample": zod.object({
+  "question": zod.string().min(1).max(generateStudyLessonResponseLearningGuideWorkedExampleQuestionMax),
+  "steps": zod.array(zod.object({
+  "action": zod.string().min(1).max(generateStudyLessonResponseLearningGuideWorkedExampleStepsItemActionMax),
+  "reason": zod.string().min(1).max(generateStudyLessonResponseLearningGuideWorkedExampleStepsItemReasonMax)
+})).min(generateStudyLessonResponseLearningGuideWorkedExampleStepsMin).max(generateStudyLessonResponseLearningGuideWorkedExampleStepsMax),
+  "answer": zod.string().min(1).max(generateStudyLessonResponseLearningGuideWorkedExampleAnswerMax)
+}),
+  "misconceptions": zod.array(zod.object({
+  "mistake": zod.string().min(1).max(generateStudyLessonResponseLearningGuideMisconceptionsItemMistakeMax),
+  "correction": zod.string().min(1).max(generateStudyLessonResponseLearningGuideMisconceptionsItemCorrectionMax)
+})).min(1).max(generateStudyLessonResponseLearningGuideMisconceptionsMax),
+  "practiceQuestions": zod.array(zod.object({
+  "question": zod.string().min(1).max(generateStudyLessonResponseLearningGuidePracticeQuestionsItemQuestionMax),
+  "hint": zod.string().min(1).max(generateStudyLessonResponseLearningGuidePracticeQuestionsItemHintMax),
+  "answer": zod.string().min(1).max(generateStudyLessonResponseLearningGuidePracticeQuestionsItemAnswerMax),
+  "explanation": zod.string().min(1).max(generateStudyLessonResponseLearningGuidePracticeQuestionsItemExplanationMax)
+})).min(generateStudyLessonResponseLearningGuidePracticeQuestionsMin).max(generateStudyLessonResponseLearningGuidePracticeQuestionsMax)
+}).optional(),
   "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de']).optional(),
   "title": zod.string(),
   "overview": zod.string(),
@@ -61,11 +302,21 @@ export const GenerateStudyLessonResponse = zod.object({
   "narration": zod.string(),
   "visualCue": zod.string(),
   "animation": zod.object({
-  "illustration": zod.enum(['general', 'water-cycle', 'plant-growth', 'fraction', 'reaction-water']).optional().describe('Optional specialized educational illustration; general uses the diagram layout.'),
+  "illustration": zod.enum(['general', 'water-cycle', 'plant-growth', 'fraction', 'percentage', 'reaction-water']).optional().describe('Optional specialized educational illustration; general uses the diagram layout.'),
   "fraction": zod.object({
   "numerator": zod.int().min(generateStudyLessonResponseScenesItemAnimationFractionNumeratorMin).max(generateStudyLessonResponseScenesItemAnimationFractionNumeratorMax),
   "denominator": zod.int().min(1).max(generateStudyLessonResponseScenesItemAnimationFractionDenominatorMax)
 }).optional(),
+  "percentage": zod.object({
+  "base": zod.number().min(generateStudyLessonResponseScenesItemAnimationPercentageBaseMin).max(generateStudyLessonResponseScenesItemAnimationPercentageBaseMax),
+  "rate": zod.number().min(generateStudyLessonResponseScenesItemAnimationPercentageRateMin).max(generateStudyLessonResponseScenesItemAnimationPercentageRateMax)
+}).optional(),
+  "teachingSteps": zod.array(zod.object({
+  "title": zod.string().min(1).max(generateStudyLessonResponseScenesItemAnimationTeachingStepsItemTitleMax),
+  "detail": zod.string().min(1).max(generateStudyLessonResponseScenesItemAnimationTeachingStepsItemDetailMax),
+  "nodeIndex": zod.int().min(generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNodeIndexMin).max(generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNodeIndexMax),
+  "narrationCue": zod.string().min(1).max(generateStudyLessonResponseScenesItemAnimationTeachingStepsItemNarrationCueMax)
+})).min(generateStudyLessonResponseScenesItemAnimationTeachingStepsMin).max(generateStudyLessonResponseScenesItemAnimationTeachingStepsMax).optional(),
   "layout": zod.enum(['flow', 'cycle', 'orbit', 'comparison']),
   "nodes": zod.array(zod.object({
   "label": zod.string().max(generateStudyLessonResponseScenesItemAnimationNodesItemLabelMax),
