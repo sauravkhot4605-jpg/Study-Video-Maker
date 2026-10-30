@@ -6,7 +6,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { LessonVideoPlayer } from '@/components/lesson-video-player';
 import { LessonLearningGuide } from '@/components/lesson-learning-guide';
-import { LearnerIntentDialog } from '@/components/learner-intent-dialog';
 import { ExamSyllabusLibrary } from '@/components/exam-syllabus-library';
 import { buildSyllabusLessonSource, type SyllabusSelection } from '@/lib/syllabus/catalog';
 import { useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
@@ -134,8 +133,6 @@ function Home() {
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>('middle');
   const [duration, setDuration] = useState<Duration>('short');
   const [language, setLanguage] = useState<StudyLanguage>('en');
-  const [intentDraft, setIntentDraft] = useState<StudyLessonInput | null>(null);
-  const [intentError, setIntentError] = useState('');
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>(readSavedLessons);
   const [lesson, setLesson] = useState<StudyLesson | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -237,31 +234,24 @@ function Home() {
       setNotice('Add a little more detail so the lesson has somewhere to begin.');
       return;
     }
-    setNotice('');
-    setIntentError('');
-    setIntentDraft({ source: source.trim(), sourceType, learnerLevel, duration, language });
+    try {
+      await createLesson({ source: source.trim(), sourceType, learnerLevel, duration, language });
+    } catch {
+      setNotice('We could not create your lesson just now. Your text is still here — please try again.');
+    }
   };
 
   const handleSyllabusLearn = async (selection: SyllabusSelection) => {
-    setIntentError('');
-    setIntentDraft({
+    try {
+      await createLesson({
         source: buildSyllabusLessonSource(selection),
         sourceType: 'topic',
         learnerLevel: 'adult',
         duration,
         language,
-    });
-  };
-
-  const confirmLearningPlan = async (data: StudyLessonInput) => {
-    setIntentDraft(null);
-    setIntentError('');
-    try {
-      await createLesson(data);
+      });
     } catch {
-      setNotice('We could not create your lesson. Your learning plan is kept here so you can retry.');
-      setIntentError('The lesson could not be created. Your choices and approved plan are kept; you can retry without rebuilding the plan.');
-      setIntentDraft(data);
+      setSyllabusError('We could not create that exam lesson just now. Please try again.');
     }
   };
 
@@ -294,7 +284,6 @@ function Home() {
 
   return (
     <div className="min-h-[100dvh] bg-[#f4f5fa] text-[#263444]">
-      {intentDraft && <LearnerIntentDialog input={intentDraft} initialError={intentError} onCancel={() => setIntentDraft(null)} onConfirm={confirmLearningPlan} />}
       <header className="sticky top-0 z-30 border-b border-[#e5e7f0] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8">
           <button onClick={startFresh} className="flex items-center gap-3 text-left" data-testid="button-home">
@@ -355,7 +344,7 @@ function Home() {
               <section className="animate-rise rounded-[26px] border border-white bg-white p-5 shadow-[0_20px_55px_rgba(47,57,94,.09)] ring-1 ring-[#e8e9f2] sm:p-8" data-testid="panel-start-lesson">
                 <div className="mb-6 flex items-start justify-between gap-4">
                   <div>
-                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[.17em] text-[#6263c7]">Make it yours · step 1</div>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[.17em] text-[#6263c7]">Your lesson starts here</div>
                     <h2 className="font-[Manrope] text-[23px] font-extrabold tracking-[-.045em] text-[#202b46] sm:text-[28px]">What are we learning today?</h2>
                     <p className="mt-1.5 text-sm leading-6 text-[#69738a]">A topic, a question or the notes that aren’t clicking yet.</p>
                   </div>
@@ -439,8 +428,9 @@ function Home() {
 
                   <div className="mt-7 flex flex-col-reverse items-start justify-between gap-4 border-t border-[#efede6] pt-5 sm:flex-row sm:items-center">
                     <p className="flex items-center gap-2 text-[11px] leading-5 text-[#78829a]"><LockKeyhole size={13} className="shrink-0 text-[#6969c9]" /> Your notes stay yours. Nothing is saved until you make a lesson.</p>
-                    <button type="submit" disabled={!source.trim() || isScanning} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#355db8] via-[#5165c9] to-[#735bc2] px-5 py-3.5 text-sm font-bold text-white shadow-[0_9px_22px_rgba(77,87,177,.23)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_27px_rgba(77,87,177,.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#735bc2]/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
-                      <Sparkles size={16} /> Personalize my lesson <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+                    <button type="submit" disabled={!source.trim() || isScanning || generateLesson.isPending} className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#355db8] via-[#5165c9] to-[#735bc2] px-5 py-3.5 text-sm font-bold text-white shadow-[0_9px_22px_rgba(77,87,177,.23)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_27px_rgba(77,87,177,.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#735bc2]/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 sm:w-auto" data-testid="button-create-lesson">
+                      {generateLesson.isPending ? <LoaderCircle size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      {generateLesson.isPending ? 'Creating your lesson…' : 'Create lesson video'} <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
                 </form>
