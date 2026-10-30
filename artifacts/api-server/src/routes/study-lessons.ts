@@ -31,7 +31,7 @@ router.post("/study-lessons/plan", async (req, res): Promise<void> => {
   try {
     const { confirmedPlan: _unused, ...input } = parsed.data;
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-nano",
+      model: "gpt-5.6-terra",
       max_completion_tokens: 4096,
       response_format: {
         type: "json_schema",
@@ -42,8 +42,17 @@ router.post("/study-lessons/plan", async (req, res): Promise<void> => {
         { role: "user", content: `Requested language: ${languageNames[input.language ?? "en"]}\nLearning request:\n${JSON.stringify(input)}` },
       ],
     });
-    const content = completion.choices[0]?.message.content;
-    if (!content) throw new Error("No learning plan was returned.");
+    const choice = completion.choices[0];
+    const content = choice?.message.content;
+    if (!content) {
+      req.log.warn({
+        model: completion.model,
+        finishReason: choice?.finish_reason,
+        wasRefused: Boolean(choice?.message.refusal),
+        completionTokens: completion.usage?.completion_tokens,
+      }, "Learning planner returned no content");
+      throw new Error("No learning plan was returned.");
+    }
     const plan = PlanStudyLessonResponse.parse(JSON.parse(content));
     // Multiple surviving meanings cannot be approved even if the model chose
     // a confident-looking plan. The student, not the model, resolves the scope.
