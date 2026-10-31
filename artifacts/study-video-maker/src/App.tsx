@@ -8,7 +8,7 @@ import { LessonVideoPlayer } from '@/components/lesson-video-player';
 import { LessonLearningGuide } from '@/components/lesson-learning-guide';
 import { ExamSyllabusLibrary } from '@/components/exam-syllabus-library';
 import { buildSyllabusLessonSource, type SyllabusSelection } from '@/lib/syllabus/catalog';
-import { useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
+import { useCreateStudyLessonFollowUp, useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
 import type { StudyLanguage, StudyLesson, StudyLessonInput } from '@workspace/api-client-react';
 import { LESSON_LANGUAGES, languageLabel } from '@/lib/lesson-languages';
 import {
@@ -137,13 +137,18 @@ function Home() {
   const [lesson, setLesson] = useState<StudyLesson | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
+  const [followUpQuestion, setFollowUpQuestion] = useState('');
+  const [followUpError, setFollowUpError] = useState('');
   const [notice, setNotice] = useState('');
   const [syllabusError, setSyllabusError] = useState('');
   const generationLock = useRef(false);
   const scrollToGeneratedLesson = useRef(false);
+  const scrollToFollowUpScene = useRef(false);
+  const followUpLock = useRef(false);
   const [isScanning, setIsScanning] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const generateLesson = useGenerateStudyLesson();
+  const createStudyLessonFollowUp = useCreateStudyLessonFollowUp();
   const scanStudyText = useScanStudyText();
 
   useEffect(() => {
@@ -225,6 +230,11 @@ function Home() {
     if (lesson && scrollToGeneratedLesson.current) {
       scrollToGeneratedLesson.current = false;
       document.querySelector('[data-testid="panel-generated-lesson"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (lesson && scrollToFollowUpScene.current) {
+      scrollToFollowUpScene.current = false;
+      document.getElementById('lesson-video-player')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [lesson]);
 
@@ -255,10 +265,62 @@ function Home() {
     }
   };
 
+  const handleLessonFollowUp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!lesson || !activeLessonId || followUpLock.current) return;
+    const question = followUpQuestion.trim().slice(0, 500);
+    if (question.length < 3) {
+      setFollowUpError('Add a question about one part of this lesson.');
+      return;
+    }
+
+    followUpLock.current = true;
+    setFollowUpError('');
+    try {
+      const context = [
+        `Key takeaways: ${lesson.keyTakeaways.slice(-8).join(' | ')}`,
+        ...lesson.scenes.slice(-6).map((scene, index) => [
+          `Recent lesson scene ${index + 1}: ${scene.title}`,
+          `Narration: ${scene.narration}`,
+          `Visual explanation: ${scene.animation?.caption ?? scene.visualCue}`,
+        ].join('\n')),
+      ].join('\n\n').slice(0, 12000);
+      const followUp = await createStudyLessonFollowUp.mutateAsync({
+        data: {
+          lessonTitle: lesson.title.slice(0, 240),
+          lessonOverview: lesson.overview.slice(0, 1600),
+          lessonContext: context,
+          question,
+          language: lesson.language ?? 'en',
+        },
+      });
+      const firstFollowUpSceneIndex = lesson.scenes.length;
+      const updatedLesson: StudyLesson = {
+        ...lesson,
+        scenes: [...lesson.scenes, ...followUp.scenes],
+        keyTakeaways: [...lesson.keyTakeaways, followUp.keyTakeaway].slice(-10),
+        estimatedMinutes: lesson.estimatedMinutes + followUp.estimatedMinutes,
+      };
+      setSavedLessons((current) => current.map((record) =>
+        record.id === activeLessonId ? { ...record, lesson: updatedLesson } : record,
+      ));
+      setLesson(updatedLesson);
+      setSceneIndex(firstFollowUpSceneIndex);
+      setFollowUpQuestion('');
+      scrollToFollowUpScene.current = true;
+    } catch {
+      setFollowUpError('We couldn’t add those scenes just now. Your lesson and question are still here; please try again.');
+    } finally {
+      followUpLock.current = false;
+    }
+  };
+
   const openSavedLesson = (record: SavedLesson) => {
     setLesson(record.lesson);
     setActiveLessonId(record.id);
     setSceneIndex(0);
+    setFollowUpQuestion('');
+    setFollowUpError('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -275,6 +337,8 @@ function Home() {
     setLesson(null);
     setActiveLessonId(null);
     setSceneIndex(0);
+    setFollowUpQuestion('');
+    setFollowUpError('');
   };
 
   const advanceScene = (direction: number) => {
@@ -340,6 +404,45 @@ function Home() {
 
         <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-9">
           <div className="min-w-0">
+            {lesson && currentScene && sceneIndex === lesson.scenes.length - 1 && (
+              <section className="mt-6 overflow-hidden rounded-[24px] border border-[#e0e2f1] bg-white p-5 shadow-[0_16px_42px_rgba(47,57,94,.08)] sm:p-7" data-testid="panel-lesson-follow-up">
+                <div className="mb-5 flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#e6eaff] to-[#f1e6ff] text-[#5d61bc]"><Sparkles size={19} /></span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#6667bd]">Keep this lesson going</p>
+                    <h3 className="mt-1 font-[Manrope] text-[19px] font-extrabold tracking-[-.035em] text-[#26324b] sm:text-[21px]">Want to explore one idea further?</h3>
+                    <p className="mt-1 text-[12px] leading-5 text-[#748098]">Ask about a specific part. Two animated scenes will be added to this saved lesson.</p>
+                  </div>
+                </div>
+                <form onSubmit={handleLessonFollowUp}>
+                  <label htmlFor="lesson-follow-up-question" className="mb-2 block text-[11px] font-bold text-[#52607c]">What would you like to understand better?</label>
+                  <textarea
+                    id="lesson-follow-up-question"
+                    value={followUpQuestion}
+                    onChange={(event) => setFollowUpQuestion(event.target.value.slice(0, 500))}
+                    maxLength={500}
+                    rows={2}
+                    disabled={createStudyLessonFollowUp.isPending}
+                    placeholder="For example: Why does this happen, or can you show another example?"
+                    className="w-full resize-y rounded-xl border border-[#e2e5ef] bg-[#f8f8fc] px-4 py-3 text-sm leading-6 text-[#26314e] outline-none transition placeholder:text-[#979db2] focus:border-[#6d70cf] focus:bg-white focus:ring-4 focus:ring-[#686bd1]/[.12] disabled:opacity-60"
+                    data-testid="input-lesson-follow-up-question"
+                  />
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p aria-live="polite" role={followUpError ? 'alert' : undefined} className="min-h-5 text-[12px] leading-5 text-[#a45447]">{followUpError}</p>
+                    <button
+                      type="submit"
+                      disabled={followUpQuestion.trim().length < 3 || createStudyLessonFollowUp.isPending}
+                      className="group inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#355db8] via-[#5165c9] to-[#735bc2] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(77,87,177,.2)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_25px_rgba(77,87,177,.26)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#735bc2]/25 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:w-auto"
+                      data-testid="button-add-lesson-follow-up"
+                    >
+                      {createStudyLessonFollowUp.isPending ? <LoaderCircle size={16} className="animate-spin" /> : <Sparkles size={15} />}
+                      {createStudyLessonFollowUp.isPending ? 'Creating follow-up scenes…' : 'Add animated scenes'}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            )}
+
             {!lesson && !generateLesson.isPending && (
               <section className="animate-rise rounded-[26px] border border-white bg-white p-5 shadow-[0_20px_55px_rgba(47,57,94,.09)] ring-1 ring-[#e8e9f2] sm:p-8" data-testid="panel-start-lesson">
                 <div className="mb-6 flex items-start justify-between gap-4">
@@ -457,7 +560,7 @@ function Home() {
             {lesson && currentScene && (
               <section lang={lesson.language ?? 'en'} className="animate-rise overflow-hidden rounded-[24px] border border-[#e7e2d7] bg-white shadow-[0_12px_35px_rgba(53,64,57,.045)]" data-testid="panel-generated-lesson">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efede6] px-5 py-4 sm:px-7">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-[#478477]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-[#eaf3ee]"><Check size={15} /></span> Your video plan is ready</div>
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-[#478477]"><span className="grid h-7 w-7 place-items-center rounded-lg bg-[#eaf3ee]"><Check size={15} /></span> Your video lesson is ready</div>
                   <button onClick={startFresh} className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-[#78827e] transition hover:bg-[#f5f4ef] hover:text-[#344844]" data-testid="button-start-another"><RotateCcw size={13} /> Start another</button>
                 </div>
 
@@ -482,12 +585,14 @@ function Home() {
                         <p className="mt-2 border-t border-[#dce7dc] pt-2">{lesson.learningPlan.scopeBoundary}</p>
                       </details>
                     )}
-                    <LessonVideoPlayer
-                      key={activeLessonId || lesson.title}
-                      lesson={lesson}
-                      sceneIndex={sceneIndex}
-                      onSceneChange={setSceneIndex}
-                    />
+                    <div id="lesson-video-player">
+                      <LessonVideoPlayer
+                        key={activeLessonId || lesson.title}
+                        lesson={lesson}
+                        sceneIndex={sceneIndex}
+                        onSceneChange={setSceneIndex}
+                      />
+                    </div>
 
                     <div className="mb-5 flex items-center justify-between gap-3 rounded-xl bg-[#f8f7f2] px-3 py-2.5">
                       <span className="text-[11px] font-semibold text-[#697872]" aria-live="polite">Scene {sceneIndex + 1} of {lesson.scenes.length}</span>

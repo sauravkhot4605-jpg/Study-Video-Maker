@@ -86,6 +86,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /study-lessons/follow-up:
+    post:
+      operationId: createStudyLessonFollowUp
+      tags: [study-lessons]
+      summary: Add focused animated scenes to an existing study lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyLessonFollowUpInput"
+      responses:
+        "200":
+          description: Two animated scenes that continue the lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyLessonFollowUp"
+        "400":
+          description: Invalid follow-up request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Follow-up generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /study-lessons/scan-text:
     post:
       operationId: scanStudyText
@@ -376,6 +406,46 @@ components:
           minimum: 1
           maximum: 12
       required: [numerator, denominator]
+    StudyLessonFollowUpInput:
+      type: object
+      properties:
+        lessonTitle:
+          type: string
+          minLength: 1
+          maxLength: 240
+        lessonOverview:
+          type: string
+          minLength: 1
+          maxLength: 1600
+        lessonContext:
+          type: string
+          minLength: 1
+          maxLength: 12000
+        question:
+          type: string
+          minLength: 3
+          maxLength: 500
+        language:
+          $ref: "#/components/schemas/StudyLanguage"
+      required: [lessonTitle, lessonOverview, lessonContext, question, language]
+    StudyLessonFollowUp:
+      type: object
+      properties:
+        scenes:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/StudyLessonScene"
+        keyTakeaway:
+          type: string
+          minLength: 1
+          maxLength: 300
+        estimatedMinutes:
+          type: integer
+          minimum: 1
+          maximum: 3
+      required: [scenes, keyTakeaway, estimatedMinutes]
     StudyLesson:
       type: object
       properties:

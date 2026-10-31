@@ -295,6 +295,48 @@ export interface StudyLessonScene {
   keyTermDefinition: string | null;
 }
 
+export interface StudyLessonFollowUpInput {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  lessonTitle: string;
+  /**
+     * @minLength 1
+     * @maxLength 1600
+     */
+  lessonOverview: string;
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  lessonContext: string;
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  question: string;
+  language: StudyLanguage;
+}
+
+export interface StudyLessonFollowUp {
+  /**
+     * @minItems 2
+     * @maxItems 2
+     */
+  scenes: StudyLessonScene[];
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  keyTakeaway: string;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  estimatedMinutes: number;
+}
+
 export interface StudyWorkedStep {
   /**
      * @minLength 1

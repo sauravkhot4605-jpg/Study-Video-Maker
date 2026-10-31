@@ -15,11 +15,11 @@ Ambiguity must be represented explicitly rather than relying only on a prompt sa
 
 **How to apply:** Collect the meanings still possible after context/clarification and require student clarification while multiple meanings remain. Do not ask again about a meaning already resolved. Invalidate the plan when learning needs change, and use the same approved scope for narration and saved lesson context.
 
-Keep planning and full lesson generation as separate explicit student actions.
+Keep the regular lesson-creation flow direct; let learners ask for animated follow-up scenes within the current lesson.
 
-**Why:** Students should be able to correct an unsuitable plan without accidentally generating a video or spending generation credits on the wrong lesson.
+**Why:** The user asked to remove pre-generation personalization because it took too long, then asked follow-up questions to stay attached to the existing lesson rather than starting over.
 
-**How to apply:** Typed, scanned and syllabus inputs must share the intent-review flow; preserve the approved plan if generation fails so a retry does not require planning again.
+**How to apply:** Generate the first lesson directly from the chosen topic or source. Only generate extra scenes when requested, and append them to the same saved lesson.
 
 The structured learning-plan request should use the reliable general-purpose model, not the compact model that previously returned empty replies.
 

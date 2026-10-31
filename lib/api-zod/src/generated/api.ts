@@ -331,6 +331,103 @@ export const GenerateStudyLessonResponse = zod.object({
 
 
 /**
+ * @summary Add focused animated scenes to an existing study lesson
+ */
+export const createStudyLessonFollowUpBodyLessonTitleMax = 240;
+
+export const createStudyLessonFollowUpBodyLessonOverviewMax = 1600;
+
+export const createStudyLessonFollowUpBodyLessonContextMax = 12000;
+
+export const createStudyLessonFollowUpBodyQuestionMin = 3;
+export const createStudyLessonFollowUpBodyQuestionMax = 500;
+
+
+
+export const CreateStudyLessonFollowUpBody = zod.object({
+  "lessonTitle": zod.string().min(1).max(createStudyLessonFollowUpBodyLessonTitleMax),
+  "lessonOverview": zod.string().min(1).max(createStudyLessonFollowUpBodyLessonOverviewMax),
+  "lessonContext": zod.string().min(1).max(createStudyLessonFollowUpBodyLessonContextMax),
+  "question": zod.string().min(createStudyLessonFollowUpBodyQuestionMin).max(createStudyLessonFollowUpBodyQuestionMax),
+  "language": zod.enum(['en', 'hi', 'mr', 'es', 'fr', 'de'])
+})
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationFractionNumeratorMin = 0;
+export const createStudyLessonFollowUpResponseScenesItemAnimationFractionNumeratorMax = 12;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationFractionDenominatorMax = 12;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationPercentageBaseMin = 0.01;
+export const createStudyLessonFollowUpResponseScenesItemAnimationPercentageBaseMax = 1000000000;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationPercentageRateMin = 0;
+export const createStudyLessonFollowUpResponseScenesItemAnimationPercentageRateMax = 100;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemTitleMax = 80;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemDetailMax = 240;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNodeIndexMin = 0;
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNodeIndexMax = 4;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNarrationCueMax = 160;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsMin = 2;
+export const createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsMax = 5;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationNodesItemLabelMax = 48;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationNodesMin = 2;
+export const createStudyLessonFollowUpResponseScenesItemAnimationNodesMax = 5;
+
+export const createStudyLessonFollowUpResponseScenesItemAnimationCaptionMax = 160;
+
+export const createStudyLessonFollowUpResponseScenesMin = 2;
+export const createStudyLessonFollowUpResponseScenesMax = 2;
+
+export const createStudyLessonFollowUpResponseKeyTakeawayMax = 300;
+
+export const createStudyLessonFollowUpResponseEstimatedMinutesMax = 3;
+
+
+
+export const CreateStudyLessonFollowUpResponse = zod.object({
+  "scenes": zod.array(zod.object({
+  "title": zod.string(),
+  "narration": zod.string(),
+  "visualCue": zod.string(),
+  "animation": zod.object({
+  "illustration": zod.enum(['general', 'water-cycle', 'plant-growth', 'fraction', 'percentage', 'reaction-water']).optional().describe('Optional specialized educational illustration; general uses the diagram layout.'),
+  "fraction": zod.object({
+  "numerator": zod.int().min(createStudyLessonFollowUpResponseScenesItemAnimationFractionNumeratorMin).max(createStudyLessonFollowUpResponseScenesItemAnimationFractionNumeratorMax),
+  "denominator": zod.int().min(1).max(createStudyLessonFollowUpResponseScenesItemAnimationFractionDenominatorMax)
+}).optional(),
+  "percentage": zod.object({
+  "base": zod.number().min(createStudyLessonFollowUpResponseScenesItemAnimationPercentageBaseMin).max(createStudyLessonFollowUpResponseScenesItemAnimationPercentageBaseMax),
+  "rate": zod.number().min(createStudyLessonFollowUpResponseScenesItemAnimationPercentageRateMin).max(createStudyLessonFollowUpResponseScenesItemAnimationPercentageRateMax)
+}).optional(),
+  "teachingSteps": zod.array(zod.object({
+  "title": zod.string().min(1).max(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemTitleMax),
+  "detail": zod.string().min(1).max(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemDetailMax),
+  "nodeIndex": zod.int().min(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNodeIndexMin).max(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNodeIndexMax),
+  "narrationCue": zod.string().min(1).max(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsItemNarrationCueMax)
+})).min(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsMin).max(createStudyLessonFollowUpResponseScenesItemAnimationTeachingStepsMax).optional(),
+  "layout": zod.enum(['flow', 'cycle', 'orbit', 'comparison']),
+  "nodes": zod.array(zod.object({
+  "label": zod.string().max(createStudyLessonFollowUpResponseScenesItemAnimationNodesItemLabelMax),
+  "icon": zod.enum(['sun', 'water', 'plant', 'molecule', 'planet', 'person', 'book', 'energy', 'number', 'cloud', 'cell', 'gear', 'lightbulb', 'atom', 'heart'])
+})).min(createStudyLessonFollowUpResponseScenesItemAnimationNodesMin).max(createStudyLessonFollowUpResponseScenesItemAnimationNodesMax),
+  "caption": zod.string().max(createStudyLessonFollowUpResponseScenesItemAnimationCaptionMax)
+}).optional(),
+  "keyTerm": zod.string().nullable(),
+  "keyTermDefinition": zod.string().nullable()
+})).min(createStudyLessonFollowUpResponseScenesMin).max(createStudyLessonFollowUpResponseScenesMax),
+  "keyTakeaway": zod.string().min(1).max(createStudyLessonFollowUpResponseKeyTakeawayMax),
+  "estimatedMinutes": zod.int().min(1).max(createStudyLessonFollowUpResponseEstimatedMinutesMax)
+})
+
+
+/**
  * @summary Extract study text from a photo
  */
 export const scanStudyTextBodyImageBase64Min = 32;

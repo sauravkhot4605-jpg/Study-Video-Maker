@@ -16,6 +16,8 @@ export * from './studyLearningProfile';
 export * from './studyLearningProfileGoal';
 export * from './studyLearningProfileKnowledge';
 export * from './studyLesson';
+export * from './studyLessonFollowUp';
+export * from './studyLessonFollowUpInput';
 export * from './studyLessonInput';
 export * from './studyLessonInputDuration';
 export * from './studyLessonInputLearnerLevel';
