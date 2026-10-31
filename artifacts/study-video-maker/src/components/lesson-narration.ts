@@ -1,5 +1,7 @@
 import { narrateStudyLesson, type StudyLesson } from '@workspace/api-client-react';
 
+const MAX_PARALLEL_NARRATIONS = 4;
+
 /** Session-only audio cache. No student text or generated audio is persisted. */
 export class LessonNarration {
   readonly context: AudioContext;
@@ -51,10 +53,18 @@ export class LessonNarration {
       }
     };
     try {
-      await Promise.all([worker(), worker()]);
+      const workerCount = Math.min(MAX_PARALLEL_NARRATIONS, this.buffers.length - ready);
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
     } catch (error) {
       controller.abort();
       throw error;
+    }
+  }
+
+  updateLesson(lesson: StudyLesson) {
+    this.lesson = lesson;
+    if (this.buffers.length < lesson.scenes.length) {
+      this.buffers.length = lesson.scenes.length;
     }
   }
 

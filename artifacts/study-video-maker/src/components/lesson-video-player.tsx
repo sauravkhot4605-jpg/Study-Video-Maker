@@ -131,6 +131,20 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
     return () => cancelAnimationFrame(frame);
   }, [lesson]);
 
+  // The same saved lesson can gain follow-up scenes without remounting this player.
+  useEffect(() => {
+    narrationRef.current?.updateLesson(lesson);
+    if (!videoUrlRef.current) return;
+    URL.revokeObjectURL(videoUrlRef.current);
+    videoUrlRef.current = '';
+    setVideoUrl('');
+    setVideoHasVoice(false);
+    setProgress(0);
+    setRecordedPlaying(false);
+    setError('');
+    setPhase('idle');
+  }, [lesson]);
+
   // Unmount cleanup only.
   useEffect(() => {
     mountedRef.current = true;
@@ -405,7 +419,7 @@ export function LessonVideoPlayer({ lesson, sceneIndex, onSceneChange }: Props) 
         <p className="mt-1 text-[11px] text-[#e7c568]" data-testid="text-narration-language">Voice and captions: {languageLabel(lesson.language)}</p>
         <p className="mt-1.5 text-[11px] leading-4 text-[#bbd0c5]">
           {voiceEnabled
-            ? 'Press Play to hear the AI voice. Narration is included when you render; captions follow each spoken scene.'
+            ? 'AI voice and animation render together in sync. Voice clips are prepared in parallel to save time.'
             : 'Captions only. Turn on AI voice narration to add speech to the preview and your next video.'}
         </p>
         {preparingVoice && (

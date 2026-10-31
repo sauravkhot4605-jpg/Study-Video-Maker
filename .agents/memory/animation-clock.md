@@ -20,3 +20,9 @@ Treat narration-text cue positions as approximate teaching-step timing, not word
 **Why:** Character positions estimate reading progress but generated speech can pause or vary its pace. Seeking before audio is prepared also starts with an estimated duration.
 
 **How to apply:** Preserve normalized step positions until the actual audio duration is known, and use real audio timestamps if promising exact spoken-word synchronization.
+
+When a saved lesson gains scenes, extend its narration cache and invalidate previously rendered video; prepare independent scene voice clips with a bounded parallel worker pool.
+
+**Why:** The user wants narration and animation together without a long wait; an old cache or export can omit newly added scenes, while unbounded audio requests can overload the service.
+
+**How to apply:** Keep the scene timeline tied to decoded audio, generate voice clips in small batches, and refresh cached audio and downloads when lesson content changes.
