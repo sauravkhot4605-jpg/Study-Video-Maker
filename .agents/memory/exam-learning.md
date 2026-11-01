@@ -9,8 +9,8 @@ Keep syllabus browsing free of automatic AI generation. Generate only the topic 
 
 **How to apply:** Preserve an explicit creation action and prevent duplicate in-flight requests when extending exam learning.
 
-Treat the library as a curated core-topic learning guide, not an exhaustive, automatically updated official syllabus.
+Keep the app's exam library limited to its curated MPSC State Services and UPSC Civil Services guides; do not add other exams unless the user asks.
 
-**Why:** MPSC and UPSC each administer multiple exams, optional subjects have separate syllabi, and banking exam patterns differ by recruitment. TAIT must not be confused with TET. Unqualified “complete/latest syllabus” claims would mislead learners.
+**Why:** The user requested focusing the app only on MPSC and UPSC and removing the other exam options.
 
-**How to apply:** State the exam and covered stages, retain official reference links and scope notes, and verify the appropriate notification before expanding coverage or claiming year-specific accuracy.
+**How to apply:** Keep MPSC and UPSC as the only in-app exam choices, state the specific covered stages, retain official links and scope notes, and verify notifications before making year-specific claims.
