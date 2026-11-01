@@ -7,6 +7,8 @@ import NotFound from '@/pages/not-found';
 import { LessonVideoPlayer } from '@/components/lesson-video-player';
 import { LessonLearningGuide } from '@/components/lesson-learning-guide';
 import { ExamSyllabusLibrary } from '@/components/exam-syllabus-library';
+import { CurrentAffairsLibrary } from '@/components/current-affairs-library';
+import type { CurrentAffair } from '@/lib/current-affairs';
 import { buildSyllabusLessonSource, type SyllabusSelection } from '@/lib/syllabus/catalog';
 import { useCreateStudyLessonFollowUp, useGenerateStudyLesson, useScanStudyText } from '@workspace/api-client-react';
 import type { StudyLanguage, StudyLesson, StudyLessonInput } from '@workspace/api-client-react';
@@ -128,7 +130,7 @@ async function prepareScanImage(file: File): Promise<{ imageBase64: string; mime
 }
 
 function Home() {
-  const [activeSlide, setActiveSlide] = useState<'create' | 'mpsc' | 'upsc'>('create');
+  const [activeSlide, setActiveSlide] = useState<'create' | 'mpsc' | 'upsc' | 'current-affairs'>('create');
   const [sourceType, setSourceType] = useState<SourceType>('topic');
   const [source, setSource] = useState('');
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>('middle');
@@ -166,8 +168,15 @@ function Home() {
   }, [notice]);
 
   const currentScene = lesson?.scenes[sceneIndex];
-  const slideSequence = ['create', 'mpsc', 'upsc'] as const;
+  const slideSequence = ['create', 'mpsc', 'upsc', 'current-affairs'] as const;
   const activeSlideIndex = slideSequence.indexOf(activeSlide);
+  const activeSlideLabel = activeSlide === 'create'
+    ? 'Create a lesson'
+    : activeSlide === 'mpsc'
+      ? 'MPSC syllabus'
+      : activeSlide === 'upsc'
+        ? 'UPSC syllabus'
+        : 'Current affairs';
   const savedLessonSlideCount = Math.max(1, Math.ceil(savedLessons.length / 4));
   const visibleSavedLessons = savedLessons.slice(savedLessonSlide * 4, (savedLessonSlide + 1) * 4);
   const handleScanPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -255,6 +264,27 @@ function Home() {
       });
     } catch {
       setSyllabusError('We could not create that exam lesson just now. Please try again.');
+    }
+  };
+
+  const handleCurrentAffairsLearn = async (item: CurrentAffair) => {
+    const lessonSource = [
+      `${item.title} (${item.date})`,
+      `What happened: ${item.summary}`,
+      `Why it matters for MPSC and UPSC: ${item.examAngle}`,
+    ].join('\n\n');
+    setSourceType('text');
+    setSource(lessonSource);
+    try {
+      await createLesson({
+        source: lessonSource,
+        sourceType: 'text',
+        learnerLevel: 'adult',
+        duration,
+        language,
+      });
+    } catch {
+      setNotice('We could not create that current-affairs lesson just now. Please try again.');
     }
   };
 
@@ -366,7 +396,7 @@ function Home() {
 
       <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-6 sm:px-8 sm:pt-10">
         <div className="sticky top-[72px] z-20 mb-5 rounded-[20px] border border-[#e5e7f0] bg-[#f4f5fa]/95 p-1.5 shadow-[0_8px_24px_rgba(47,57,94,.07)] backdrop-blur-xl">
-          <nav className="grid grid-cols-3 gap-1.5" role="tablist" aria-label="Studyloom slides">
+          <nav className="grid grid-cols-2 gap-1.5 sm:grid-cols-4" role="tablist" aria-label="Studyloom slides">
             <button
               type="button"
               id="tab-slide-create"
@@ -413,6 +443,19 @@ function Home() {
               <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[10px] font-extrabold sm:text-xs ${activeSlide === 'upsc' ? 'bg-white/15 text-[#f5d37d]' : 'bg-white text-[#6267bc]'}`}>03</span>
               <span><span className="block text-xs font-extrabold sm:text-sm">UPSC</span><span className={`hidden text-[10px] sm:block ${activeSlide === 'upsc' ? 'text-white/65' : 'text-[#929ca0]'}`}>Civil services</span></span>
             </button>
+            <button
+              type="button"
+              id="tab-slide-current-affairs"
+              role="tab"
+              aria-controls="slide-current-affairs"
+              aria-selected={activeSlide === 'current-affairs'}
+              onClick={() => setActiveSlide('current-affairs')}
+              className={`flex min-h-12 items-center gap-2 rounded-2xl px-2 py-2 text-left transition sm:gap-3 sm:px-5 ${activeSlide === 'current-affairs' ? 'bg-[#173f3b] text-white shadow-sm' : 'text-[#5c6d70] hover:bg-white'}`}
+              data-testid="tab-slide-current-affairs"
+            >
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[10px] font-extrabold sm:text-xs ${activeSlide === 'current-affairs' ? 'bg-white/15 text-[#f5d37d]' : 'bg-white text-[#438678]'}`}>04</span>
+              <span><span className="block text-xs font-extrabold sm:text-sm">Current affairs</span><span className={`hidden text-[10px] sm:block ${activeSlide === 'current-affairs' ? 'text-white/65' : 'text-[#929ca0]'}`}>2025 &amp; 2026</span></span>
+            </button>
           </nav>
         </div>
 
@@ -422,7 +465,7 @@ function Home() {
             style={{ transform: `translateX(-${activeSlideIndex * 100}%)` }}
             data-testid="study-slide-track"
           >
-            <section id="slide-create" role="tabpanel" aria-labelledby="tab-slide-create" aria-hidden={activeSlide !== 'create'} inert={activeSlide !== 'create'} aria-roledescription="slide" aria-label="Slide 1 of 3: Create lesson" className="w-full shrink-0">
+            <section id="slide-create" role="tabpanel" aria-labelledby="tab-slide-create" aria-hidden={activeSlide !== 'create'} inert={activeSlide !== 'create'} aria-roledescription="slide" aria-label="Slide 1 of 4: Create lesson" className="w-full shrink-0">
         <section className="relative mb-7 overflow-hidden rounded-[30px] border border-[#284b61] bg-gradient-to-br from-[#15283f] via-[#18545d] to-[#287968] px-6 py-8 shadow-[0_22px_55px_rgba(35,61,84,.18)] sm:mb-9 sm:rounded-[34px] sm:px-10 sm:py-10">
           <div className="pointer-events-none absolute -right-8 -top-24 h-[300px] w-[300px] rounded-full border border-[#a8dbd1]/25 sm:right-[12%]">
             <div className="absolute inset-8 rounded-full border border-[#a8dbd1]/25" />
@@ -764,7 +807,7 @@ function Home() {
 
             </section>
 
-            <section id="slide-mpsc" role="tabpanel" aria-labelledby="tab-slide-mpsc" aria-hidden={activeSlide !== 'mpsc'} inert={activeSlide !== 'mpsc'} aria-roledescription="slide" aria-label="Slide 2 of 3: MPSC syllabus" className="w-full shrink-0">
+            <section id="slide-mpsc" role="tabpanel" aria-labelledby="tab-slide-mpsc" aria-hidden={activeSlide !== 'mpsc'} inert={activeSlide !== 'mpsc'} aria-roledescription="slide" aria-label="Slide 2 of 4: MPSC syllabus" className="w-full shrink-0">
               <ExamSyllabusLibrary
                 key="mpsc"
                 initialExamId="mpsc"
@@ -779,7 +822,7 @@ function Home() {
               />
             </section>
 
-            <section id="slide-upsc" role="tabpanel" aria-labelledby="tab-slide-upsc" aria-hidden={activeSlide !== 'upsc'} inert={activeSlide !== 'upsc'} aria-roledescription="slide" aria-label="Slide 3 of 3: UPSC syllabus" className="w-full shrink-0">
+            <section id="slide-upsc" role="tabpanel" aria-labelledby="tab-slide-upsc" aria-hidden={activeSlide !== 'upsc'} inert={activeSlide !== 'upsc'} aria-roledescription="slide" aria-label="Slide 3 of 4: UPSC syllabus" className="w-full shrink-0">
               <ExamSyllabusLibrary
                 key="upsc"
                 initialExamId="upsc"
@@ -793,12 +836,19 @@ function Home() {
                 error={syllabusError}
               />
             </section>
+
+            <section id="slide-current-affairs" role="tabpanel" aria-labelledby="tab-slide-current-affairs" aria-hidden={activeSlide !== 'current-affairs'} inert={activeSlide !== 'current-affairs'} aria-roledescription="slide" aria-label="Slide 4 of 4: Current affairs" className="w-full shrink-0">
+              <CurrentAffairsLibrary
+                busy={generateLesson.isPending}
+                onCreateLesson={handleCurrentAffairsLearn}
+              />
+            </section>
           </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between rounded-2xl border border-[#e5e7f0] bg-white/80 px-3 py-2.5 sm:px-4">
           <span className="text-[10px] font-semibold text-[#7d8582]" aria-live="polite">
-            {`Slide ${activeSlideIndex + 1} of 3 · ${activeSlide === 'create' ? 'Create a lesson' : `${activeSlide.toUpperCase()} syllabus`}`}
+            {`Slide ${activeSlideIndex + 1} of ${slideSequence.length} · ${activeSlideLabel}`}
           </span>
           <div className="flex items-center gap-2">
             {activeSlideIndex > 0 && (
@@ -818,7 +868,7 @@ function Home() {
                 className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-[#176e5c] px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-[#105b4b] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176e5c]/20 sm:px-4 sm:text-xs"
                 data-testid="button-slide-next"
               >
-                {activeSlide === 'create' ? 'Browse MPSC syllabus' : 'Browse UPSC syllabus'} <ArrowRight size={14} />
+                {activeSlide === 'create' ? 'Browse MPSC syllabus' : activeSlide === 'mpsc' ? 'Browse UPSC syllabus' : 'Current affairs'} <ArrowRight size={14} />
               </button>
             )}
           </div>
