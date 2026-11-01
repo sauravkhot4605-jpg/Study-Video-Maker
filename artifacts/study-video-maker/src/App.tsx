@@ -128,12 +128,14 @@ async function prepareScanImage(file: File): Promise<{ imageBase64: string; mime
 }
 
 function Home() {
+  const [activeSlide, setActiveSlide] = useState<'create' | 'mpsc' | 'upsc'>('create');
   const [sourceType, setSourceType] = useState<SourceType>('topic');
   const [source, setSource] = useState('');
   const [learnerLevel, setLearnerLevel] = useState<LearnerLevel>('middle');
   const [duration, setDuration] = useState<Duration>('short');
   const [language, setLanguage] = useState<StudyLanguage>('en');
   const [savedLessons, setSavedLessons] = useState<SavedLesson[]>(readSavedLessons);
+  const [savedLessonSlide, setSavedLessonSlide] = useState(0);
   const [lesson, setLesson] = useState<StudyLesson | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
@@ -142,8 +144,6 @@ function Home() {
   const [notice, setNotice] = useState('');
   const [syllabusError, setSyllabusError] = useState('');
   const generationLock = useRef(false);
-  const scrollToGeneratedLesson = useRef(false);
-  const scrollToFollowUpScene = useRef(false);
   const followUpLock = useRef(false);
   const [isScanning, setIsScanning] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +166,10 @@ function Home() {
   }, [notice]);
 
   const currentScene = lesson?.scenes[sceneIndex];
+  const slideSequence = ['create', 'mpsc', 'upsc'] as const;
+  const activeSlideIndex = slideSequence.indexOf(activeSlide);
+  const savedLessonSlideCount = Math.max(1, Math.ceil(savedLessons.length / 4));
+  const visibleSavedLessons = savedLessons.slice(savedLessonSlide * 4, (savedLessonSlide + 1) * 4);
   const handleScanPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -205,19 +209,20 @@ function Home() {
     const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const record: SavedLesson = { id: newId, lesson: newLesson, savedAt: new Date().toISOString() };
     setSavedLessons((current) => [record, ...current.filter((item) => item.lesson.title !== newLesson.title)].slice(0, 24));
+    setSavedLessonSlide(0);
     setActiveLessonId(newId);
   };
 
   const createLesson = async (data: StudyLessonInput) => {
     if (generationLock.current) return;
     generationLock.current = true;
+    setActiveSlide('create');
     setNotice('');
     setSyllabusError('');
     setLesson(null);
     setActiveLessonId(null);
     try {
       const result = await generateLesson.mutateAsync({ data });
-      scrollToGeneratedLesson.current = true;
       setLesson(result);
       setSceneIndex(0);
       saveLesson(result);
@@ -225,18 +230,6 @@ function Home() {
       generationLock.current = false;
     }
   };
-
-  useEffect(() => {
-    if (lesson && scrollToGeneratedLesson.current) {
-      scrollToGeneratedLesson.current = false;
-      document.querySelector('[data-testid="panel-generated-lesson"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    if (lesson && scrollToFollowUpScene.current) {
-      scrollToFollowUpScene.current = false;
-      document.getElementById('lesson-video-player')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [lesson]);
 
   const handleGenerate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -307,7 +300,6 @@ function Home() {
       setLesson(updatedLesson);
       setSceneIndex(firstFollowUpSceneIndex);
       setFollowUpQuestion('');
-      scrollToFollowUpScene.current = true;
     } catch {
       setFollowUpError('We couldn’t add those scenes just now. Your lesson and question are still here; please try again.');
     } finally {
@@ -316,17 +308,19 @@ function Home() {
   };
 
   const openSavedLesson = (record: SavedLesson) => {
+    setActiveSlide('create');
     setLesson(record.lesson);
     setActiveLessonId(record.id);
     setSceneIndex(0);
     setFollowUpQuestion('');
     setFollowUpError('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const removeSavedLesson = (event: MouseEvent, id: string) => {
     event.stopPropagation();
     setSavedLessons((current) => current.filter((item) => item.id !== id));
+    const lastValidSlide = Math.max(0, Math.ceil(Math.max(0, savedLessons.length - 1) / 4) - 1);
+    setSavedLessonSlide((slide) => Math.min(slide, lastValidSlide));
     if (activeLessonId === id) {
       setLesson(null);
       setActiveLessonId(null);
@@ -334,6 +328,7 @@ function Home() {
   };
 
   const startFresh = () => {
+    setActiveSlide('create');
     setLesson(null);
     setActiveLessonId(null);
     setSceneIndex(0);
@@ -370,6 +365,64 @@ function Home() {
       </header>
 
       <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-6 sm:px-8 sm:pt-10">
+        <div className="sticky top-[72px] z-20 mb-5 rounded-[20px] border border-[#e5e7f0] bg-[#f4f5fa]/95 p-1.5 shadow-[0_8px_24px_rgba(47,57,94,.07)] backdrop-blur-xl">
+          <nav className="grid grid-cols-3 gap-1.5" role="tablist" aria-label="Studyloom slides">
+            <button
+              type="button"
+              id="tab-slide-create"
+              role="tab"
+              aria-controls="slide-create"
+              aria-selected={activeSlide === 'create'}
+              onClick={() => setActiveSlide('create')}
+              className={`flex min-h-12 items-center gap-3 rounded-2xl px-3 py-2 text-left transition sm:px-5 ${activeSlide === 'create' ? 'bg-[#173f3b] text-white shadow-sm' : 'text-[#5c6d70] hover:bg-white'}`}
+              data-testid="tab-slide-create"
+            >
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[10px] font-extrabold sm:text-xs ${activeSlide === 'create' ? 'bg-white/15 text-[#f5d37d]' : 'bg-white text-[#438678]'}`}>01</span>
+              <span>
+                <span className="block text-xs font-extrabold sm:text-sm">
+                  {lesson
+                    ? <><span className="sm:hidden">Lesson</span><span className="hidden sm:inline">Your lesson</span></>
+                    : <><span className="sm:hidden">Create</span><span className="hidden sm:inline">Create lesson</span></>}
+                </span>
+                <span className={`hidden text-[10px] sm:block ${activeSlide === 'create' ? 'text-white/65' : 'text-[#929ca0]'}`}>Topic or study text</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              id="tab-slide-mpsc"
+              role="tab"
+              aria-controls="slide-mpsc"
+              aria-selected={activeSlide === 'mpsc'}
+              onClick={() => setActiveSlide('mpsc')}
+              className={`flex min-h-12 items-center gap-2 rounded-2xl px-2 py-2 text-left transition sm:gap-3 sm:px-5 ${activeSlide === 'mpsc' ? 'bg-[#173f3b] text-white shadow-sm' : 'text-[#5c6d70] hover:bg-white'}`}
+              data-testid="tab-slide-mpsc"
+            >
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[10px] font-extrabold sm:text-xs ${activeSlide === 'mpsc' ? 'bg-white/15 text-[#f5d37d]' : 'bg-white text-[#438678]'}`}>02</span>
+              <span><span className="block text-xs font-extrabold sm:text-sm">MPSC</span><span className={`hidden text-[10px] sm:block ${activeSlide === 'mpsc' ? 'text-white/65' : 'text-[#929ca0]'}`}>State services</span></span>
+            </button>
+            <button
+              type="button"
+              id="tab-slide-upsc"
+              role="tab"
+              aria-controls="slide-upsc"
+              aria-selected={activeSlide === 'upsc'}
+              onClick={() => setActiveSlide('upsc')}
+              className={`flex min-h-12 items-center gap-2 rounded-2xl px-2 py-2 text-left transition sm:gap-3 sm:px-5 ${activeSlide === 'upsc' ? 'bg-[#173f3b] text-white shadow-sm' : 'text-[#5c6d70] hover:bg-white'}`}
+              data-testid="tab-slide-upsc"
+            >
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[10px] font-extrabold sm:text-xs ${activeSlide === 'upsc' ? 'bg-white/15 text-[#f5d37d]' : 'bg-white text-[#6267bc]'}`}>03</span>
+              <span><span className="block text-xs font-extrabold sm:text-sm">UPSC</span><span className={`hidden text-[10px] sm:block ${activeSlide === 'upsc' ? 'text-white/65' : 'text-[#929ca0]'}`}>Civil services</span></span>
+            </button>
+          </nav>
+        </div>
+
+        <div className="overflow-hidden" data-testid="study-slide-viewport">
+          <div
+            className="flex items-start transition-transform duration-500 ease-in-out motion-reduce:transition-none"
+            style={{ transform: `translateX(-${activeSlideIndex * 100}%)` }}
+            data-testid="study-slide-track"
+          >
+            <section id="slide-create" role="tabpanel" aria-labelledby="tab-slide-create" aria-hidden={activeSlide !== 'create'} inert={activeSlide !== 'create'} aria-roledescription="slide" aria-label="Slide 1 of 3: Create lesson" className="w-full shrink-0">
         <section className="relative mb-7 overflow-hidden rounded-[30px] border border-[#284b61] bg-gradient-to-br from-[#15283f] via-[#18545d] to-[#287968] px-6 py-8 shadow-[0_22px_55px_rgba(35,61,84,.18)] sm:mb-9 sm:rounded-[34px] sm:px-10 sm:py-10">
           <div className="pointer-events-none absolute -right-8 -top-24 h-[300px] w-[300px] rounded-full border border-[#a8dbd1]/25 sm:right-[12%]">
             <div className="absolute inset-8 rounded-full border border-[#a8dbd1]/25" />
@@ -663,8 +716,8 @@ function Home() {
                     <span>{savedLessons.length} saved {savedLessons.length === 1 ? 'lesson' : 'lessons'}</span>
                     <span className="flex items-center gap-1"><LockKeyhole size={10} /> This device</span>
                   </div>
-                  <div className="lesson-scroll mt-2 max-h-[480px] space-y-1 overflow-y-auto pr-1">
-                    {savedLessons.map((record) => (
+                  <div className="mt-2 space-y-1">
+                    {visibleSavedLessons.map((record) => (
                       <div key={record.id} className={`group flex items-center gap-1 rounded-xl pr-1 transition ${activeLessonId === record.id ? 'bg-[#edf4ef]' : 'hover:bg-[#f7f7f2]'}`}>
                         <button onClick={() => openSavedLesson(record)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl p-3 text-left" data-testid={`button-open-lesson-${record.id}`}>
                           <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] ${activeLessonId === record.id ? 'bg-[#d7e8dd] text-[#377766]' : 'bg-[#f4f0e3] text-[#ac8b37]'}`}><Play size={13} fill="currentColor" /></span>
@@ -677,6 +730,19 @@ function Home() {
                       </div>
                     ))}
                   </div>
+                  {savedLessonSlideCount > 1 && (
+                    <div className="mt-2 flex items-center justify-between border-t border-[#f0eee8] pt-2" role="group" aria-label="Saved lesson slides">
+                      <button type="button" onClick={() => setSavedLessonSlide((slide) => Math.max(0, slide - 1))} disabled={savedLessonSlide === 0}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[10px] font-bold text-[#438678] transition hover:bg-[#f2f6f2] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous saved lesson slide" data-testid="button-saved-lessons-previous">
+                        <ArrowLeft size={12} /> Previous
+                      </button>
+                      <span className="text-[9px] font-semibold text-[#929a94]" aria-live="polite" data-testid="text-saved-lesson-slide">Slide {savedLessonSlide + 1} of {savedLessonSlideCount}</span>
+                      <button type="button" onClick={() => setSavedLessonSlide((slide) => Math.min(savedLessonSlideCount - 1, slide + 1))} disabled={savedLessonSlide >= savedLessonSlideCount - 1}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[10px] font-bold text-[#438678] transition hover:bg-[#f2f6f2] disabled:cursor-not-allowed disabled:opacity-40" aria-label="Next saved lesson slide" data-testid="button-saved-lessons-next">
+                        Next <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="mt-4 rounded-2xl bg-[#f8f7f2] px-4 py-6 text-center">
@@ -696,22 +762,67 @@ function Home() {
           </aside>
         </div>
 
-        <section className="mt-12 border-t border-[#e3e5ef] pt-9 sm:mt-16 sm:pt-11" aria-labelledby="exam-library-heading">
-          <div className="mb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[.17em] text-[#6567bf]">Choose a guided path</p>
-            <h2 id="exam-library-heading" className="mt-1 font-[Manrope] text-[23px] font-extrabold tracking-[-.045em] text-[#202b46] sm:text-[28px]">Explore an exam syllabus</h2>
-            <p className="mt-1.5 text-sm leading-6 text-[#69738a]">Start with a curated topic from your exam preparation.</p>
+            </section>
+
+            <section id="slide-mpsc" role="tabpanel" aria-labelledby="tab-slide-mpsc" aria-hidden={activeSlide !== 'mpsc'} inert={activeSlide !== 'mpsc'} aria-roledescription="slide" aria-label="Slide 2 of 3: MPSC syllabus" className="w-full shrink-0">
+              <ExamSyllabusLibrary
+                key="mpsc"
+                initialExamId="mpsc"
+                showExamOptions={false}
+                onLearn={handleSyllabusLearn}
+                busy={generateLesson.isPending}
+                language={language}
+                onLanguageChange={setLanguage}
+                duration={duration}
+                onDurationChange={setDuration}
+                error={syllabusError}
+              />
+            </section>
+
+            <section id="slide-upsc" role="tabpanel" aria-labelledby="tab-slide-upsc" aria-hidden={activeSlide !== 'upsc'} inert={activeSlide !== 'upsc'} aria-roledescription="slide" aria-label="Slide 3 of 3: UPSC syllabus" className="w-full shrink-0">
+              <ExamSyllabusLibrary
+                key="upsc"
+                initialExamId="upsc"
+                showExamOptions={false}
+                onLearn={handleSyllabusLearn}
+                busy={generateLesson.isPending}
+                language={language}
+                onLanguageChange={setLanguage}
+                duration={duration}
+                onDurationChange={setDuration}
+                error={syllabusError}
+              />
+            </section>
           </div>
-          <ExamSyllabusLibrary
-            onLearn={handleSyllabusLearn}
-            busy={generateLesson.isPending}
-            language={language}
-            onLanguageChange={setLanguage}
-            duration={duration}
-            onDurationChange={setDuration}
-            error={syllabusError}
-          />
-        </section>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-[#e5e7f0] bg-white/80 px-3 py-2.5 sm:px-4">
+          <span className="text-[10px] font-semibold text-[#7d8582]" aria-live="polite">
+            {`Slide ${activeSlideIndex + 1} of 3 · ${activeSlide === 'create' ? 'Create a lesson' : `${activeSlide.toUpperCase()} syllabus`}`}
+          </span>
+          <div className="flex items-center gap-2">
+            {activeSlideIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveSlide(slideSequence[activeSlideIndex - 1]!)}
+                className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#dce5df] bg-white px-3.5 py-2 text-[11px] font-bold text-[#386e61] transition hover:bg-[#f4f8f4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176e5c]/20 sm:px-4 sm:text-xs"
+                data-testid="button-slide-previous"
+              >
+                <ArrowLeft size={14} /> Previous
+              </button>
+            )}
+            {activeSlideIndex < slideSequence.length - 1 && (
+              <button
+                type="button"
+                onClick={() => setActiveSlide(slideSequence[activeSlideIndex + 1]!)}
+                className="inline-flex min-h-9 items-center gap-2 rounded-xl bg-[#176e5c] px-3.5 py-2 text-[11px] font-bold text-white transition hover:bg-[#105b4b] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176e5c]/20 sm:px-4 sm:text-xs"
+                data-testid="button-slide-next"
+              >
+                {activeSlide === 'create' ? 'Browse MPSC syllabus' : 'Browse UPSC syllabus'} <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
       </main>
 
       {notice && (
